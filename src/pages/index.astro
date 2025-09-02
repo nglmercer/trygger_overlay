@@ -1,16 +1,21 @@
 ---
-
+import Layout from '../layout/Layout.astro';
+import Tabs from '../components/tabs.astro';
+import Upload from '../components/media/upload.vue'
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout>
+	<Tabs />
+	<dlg-cont class="upload_modal">
+		<Upload client:only="vue" />
+	</dlg-cont>
+	<button type="button" class="btn btn-primary" id="NewTrigger">Open Modal</button>
+</Layout>
+<script>
+	import { DlgCont } from '@litcomponents/modal'
+	const button = document.querySelector('#NewTrigger') as HTMLButtonElement;
+	button.addEventListener('click', () => {
+		const modal = document.querySelector('.upload_modal') as DlgCont;
+		modal.show();
+	})
+</script>

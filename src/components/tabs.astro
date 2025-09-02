@@ -1,0 +1,37 @@
+---
+const tabs = [
+  { label: "Images", active: true },
+  { label: "Videos" },
+  { label: "Sounds" },
+  { label: "OBS" },
+  { label: "Groups" },
+];
+---
+
+<div class="w-full h-16 flex bg-transparent px-3">
+  <div class="flex w-full h-16 items-center">
+    <div class="flex flex-1 overflow-hidden touch-none bg-gray-800 relative">
+      <div class="absolute bottom-0 left-0 h-0.5 w-[333px] bg-[rgb(110,121,255)] transition-all"></div>
+      {tabs.map(tab => (
+        <button
+          class={`flex-1 min-w-[90px] flex flex-col-reverse items-center justify-center text-sm font-medium uppercase tracking-wide px-4 transition
+          ${tab.active 
+            ? "text-[rgb(110,121,255)] bg-[rgb(50,50,50)] font-bold" 
+            : "text-white/60 bg-[rgb(50,50,50)]"
+          }`}
+        >
+          <b class={`mb-1 ${tab.active ? "" : "opacity-70"}`}>
+            {tab.label}
+          </b>
+          <span class="material-symbols-outlined text-2xl">
+            {tab.label === "Images" ? "image" :
+             tab.label === "Videos" ? "movie" :
+             tab.label === "Sounds" ? "volume_up" :
+             tab.label === "OBS" ? "podcasts" :
+             "groups"}
+          </span>
+        </button>
+      ))}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,12 @@
+<template>
+  <div class="relative flex items-center w-full max-w-xs">
+    <span class="material-symbols-outlined absolute left-3 text-white/50 pointer-events-none">
+      search
+    </span>
+    <input
+      type="text"
+      placeholder="Search"
+      class="bg-white/10 w-full text-white placeholder-white/50 h-12 pl-10 pr-4 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+    />
+  </div>
+</template>
