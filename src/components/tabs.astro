@@ -1,29 +1,36 @@
 ---
-const tabs = [
-  { label: "Images", active: true },
-  { label: "Videos" },
-  { label: "Sounds" },
-  { label: "OBS" },
-  { label: "Groups" },
-];
+// src/components/Tabs.astro
+import { tabs, TabClassnames } from "src/config/tabs";
+
+const initialActiveTab = tabs.find(t => t.active)?.label || tabs[0].label;
 ---
 
 <div class="w-full h-16 flex bg-transparent px-3">
   <div class="flex w-full h-16 items-center">
-    <div class="flex flex-1 overflow-hidden touch-none bg-gray-800 relative">
-      <div class="absolute bottom-0 left-0 h-0.5 w-[333px] bg-[rgb(110,121,255)] transition-all"></div>
+    <div id="tabs-container" class={`
+      flex flex-1 bg-gray-800 relative
+      md:overflow-hidden md:touch-none
+      max-md:overflow-x-auto max-md:touch-pan-x max-md:scrollbar-thin max-md:scrollbar-track-gray-700 max-md:scrollbar-thumb-gray-600
+    `}>
+      <div 
+        id="TabIndicator" 
+        class="absolute bottom-0 left-0 h-0.5 bg-[rgb(110,121,255)] transition-all duration-300 ease-in-out"
+      ></div>
+      
       {tabs.map(tab => (
         <button
-          class={`flex-1 min-w-[90px] flex flex-col-reverse items-center justify-center text-sm font-medium uppercase tracking-wide px-4 transition
-          ${tab.active 
-            ? "text-[rgb(110,121,255)] bg-[rgb(50,50,50)] font-bold" 
-            : "text-white/60 bg-[rgb(50,50,50)]"
-          }`}
+          class={`${TabClassnames.base} ${
+            tab.label === initialActiveTab 
+              ? TabClassnames.active 
+              : TabClassnames.inactive
+          } min-w-[120px]`}
+          data-tab-label={tab.label}
         >
-          <b class={`mb-1 ${tab.active ? "" : "opacity-70"}`}>
+          <b class={`mb-1 pointer-events-none ${tab.label === initialActiveTab ? "" : "opacity-70"}`}>
             {tab.label}
           </b>
-          <span class="material-symbols-outlined text-2xl">
+          <span class="material-symbols-outlined text-2xl pointer-events-none">
+            {/* ... tus iconos ... */}
             {tab.label === "Images" ? "image" :
              tab.label === "Videos" ? "movie" :
              tab.label === "Sounds" ? "volume_up" :
@@ -35,3 +42,80 @@ const tabs = [
     </div>
   </div>
 </div>
+
+<script>
+  import { emitter } from "@utils/Emitter";
+  import { TabClassnames } from "src/config/tabs";
+
+  function initializeTabsAndIndicator() {
+    const tabsContainer = document.getElementById('tabs-container');
+    const indicator = document.getElementById('TabIndicator');
+    
+    if (!tabsContainer || !indicator) {
+        console.error("No se encontraron los elementos de las pestañas o el indicador.");
+        return;
+    };
+
+    const activeClasses = TabClassnames.active.split(' ');
+    const inactiveClasses = TabClassnames.inactive.split(' ');
+
+    /**
+     * PASO 2: Crear una función reutilizable para mover el indicador.
+     * @param {HTMLElement} targetButton - El botón de la pestaña al que debe moverse el indicador.
+     */
+    function moveIndicator(targetButton: HTMLElement | null) {
+      if (!targetButton) return;
+      
+      const targetWidth = targetButton.offsetWidth; // Ancho del botón
+      const targetOffsetLeft = targetButton.offsetLeft; // Posición izquierda relativa al contenedor
+      if (!indicator) return;
+      // Aplicamos el ancho y la posición usando transform para una mejor performance
+      indicator.style.width = `${targetWidth}px`;
+      indicator.style.transform = `translateX(${targetOffsetLeft}px)`;
+    }
+
+    // --- Manejo de eventos ---
+
+    tabsContainer.addEventListener('click', (event) => {
+      const clickedButton = (event.target as HTMLElement).closest('button');
+      if (!clickedButton) return;
+
+      const tabLabel = clickedButton.dataset.tabLabel;
+      if (!tabLabel) return;
+
+      emitter.emit('tab:changed', tabLabel);
+
+      const allButtons = tabsContainer.querySelectorAll('button');
+
+      allButtons.forEach(button => {
+        button.classList.remove(...activeClasses);
+        button.classList.add(...inactiveClasses);
+        const textElement = button.querySelector('b');
+        if (textElement) textElement.classList.add('opacity-70');
+      });
+
+      clickedButton.classList.remove(...inactiveClasses);
+      clickedButton.classList.add(...activeClasses);
+      const clickedTextElement = clickedButton.querySelector('b');
+      if (clickedTextElement) clickedTextElement.classList.remove('opacity-70');
+      
+      // PASO 3.1: Mover el indicador al hacer clic
+      moveIndicator(clickedButton);
+    });
+
+    // PASO 3.2: Mover el indicador en la carga inicial
+    // Buscamos el botón que ya tiene la clase activa (la que tiene font-bold es única)
+    const initialActiveButton = tabsContainer.querySelector(`.${TabClassnames.active.split(' ').find(c => c.includes('font-bold'))}`);
+    moveIndicator(initialActiveButton as HTMLElement);
+
+    // PASO 3.3: Mover el indicador si la ventana cambia de tamaño
+    window.addEventListener('resize', () => {
+        // En cada resize, buscamos de nuevo el botón activo y recalculamos su posición
+        const currentActiveButton = tabsContainer.querySelector(`.${TabClassnames.active.split(' ').find(c => c.includes('font-bold'))}`);
+        moveIndicator(currentActiveButton as HTMLElement);
+    });
+  }
+
+  // Ejecutar todo el script
+  initializeTabsAndIndicator();
+</script>

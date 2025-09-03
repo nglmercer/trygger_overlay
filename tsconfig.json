@@ -24,7 +24,10 @@
       ],
       "@litcomponents/*": [
         "src/litcomponents/*"
-      ]
+      ],
+      "@utils/*": [
+        "src/utils/*"
+      ],
     },
   }
 }

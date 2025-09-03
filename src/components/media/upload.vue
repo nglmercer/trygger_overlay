@@ -5,7 +5,7 @@ import SortDropdown from '@components/media/SortDropdown.vue';
 import ViewToggle from '@components/media/ViewToggle.vue';
 import UsageStats from '@components/media/UsageStats.vue';  
 import EmptyState from '@components/media/EmptyState.vue';
-
+import UploadTab from '@components/media/UploadTab.vue';
 type Tab = 'Images' | 'Videos' | 'Sounds' | 'Upload';
 type ViewMode = 'grid' | 'list';
 
@@ -19,24 +19,7 @@ const TABS: { id: Tab; icon: string }[] = [
 const activeTab = ref<Tab>('Images');
 const viewMode = ref<ViewMode>('grid');
 
-// Upload tab handlers
-const fileInput = ref<HTMLInputElement | null>(null);
-const onSelectClick = () => fileInput.value?.click();
-const onFileChange = (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  const files = input.files;
-  // TODO: Handle selected files
-  console.log('Selected files:', files);
-};
-const onDrop = (e: DragEvent) => {
-  e.preventDefault();
-  const files = e.dataTransfer?.files;
-  // TODO: Handle dropped files
-  console.log('Dropped files:', files);
-};
-const onDragOver = (e: DragEvent) => {
-  e.preventDefault();
-};
+
 </script>
 
 <template>
@@ -86,35 +69,7 @@ const onDragOver = (e: DragEvent) => {
         <EmptyState :type="activeTab" @go-upload="activeTab = 'Upload'" />
       </template>
       <template v-else>
-        <div 
-          class="w-full max-w-3xl mx-auto rounded-md"
-          @drop="onDrop"
-          @dragover="onDragOver"
-        >
-          <div class="flex flex-col items-center text-center py-24">
-            <button 
-              type="button" 
-              @click="onSelectClick"
-              class="h-9 min-w-[64px] px-4 inline-flex items-center justify-center rounded bg-[rgb(70,89,255)] text-white font-medium tracking-wider uppercase cursor-pointer transition-all duration-300 shadow-md hover:shadow-lg"
-            >
-              <span class="font-bold">Select file...</span>
-            </button>
-            <div class="pt-2 text-sm text-white/80">or drag and drop</div>
-          </div>
-          <div class="text-center px-3 pb-4">
-            <small class="block text-[11.2px] text-white/70">Supported formats: png, jpeg, jpg, gif, mp3, mpeg, wav, ogg, webm and mp4</small>
-            <small class="block text-[11.2px] text-white/70">Max file size: <b class="font-bold text-white">20MB</b></small>
-          </div>
-          <input 
-            ref="fileInput"
-            type="file" 
-            name="upload[]" 
-            multiple 
-            accept=".png,.jpeg,.jpg,.gif,.mp3,.mpeg,.wav,.ogg,.webm,.mp4" 
-            class="hidden" 
-            @change="onFileChange"
-          /> 
-        </div>
+        <UploadTab />
       </template>
     </main>
   </div>

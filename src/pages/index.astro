@@ -1,11 +1,16 @@
 ---
 import Layout from '../layout/Layout.astro';
 import Tabs from '../components/tabs.astro';
-import Upload from '../components/media/upload.vue'
+import Upload from '../components/media/upload.vue';
+import NotificationContainer from '@components/NotificationContainer.vue';
+import MainContent from '@components/MainContent.vue';
 ---
 
 <Layout>
-	<Tabs />
+	<Tabs activeTab='Images'/>
+	<MainContent client:only="vue"/>
+	<NotificationContainer client:only="vue"/>
+
 	<dlg-cont class="upload_modal">
 		<Upload client:only="vue" />
 	</dlg-cont>
