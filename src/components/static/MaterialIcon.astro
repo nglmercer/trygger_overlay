@@ -1,0 +1,32 @@
+---
+interface Props {
+  icon: string;
+  size?: string;
+  color?: string;
+  weight?: string;
+  grade?: string;
+  opticalSize?: string;
+  className?: string;
+}
+
+const {
+  icon,
+  size = "24px",
+  color = "currentColor",
+  weight = "400",
+  grade = "0",
+  opticalSize = "24",
+  className = "",
+} = Astro.props;
+---
+
+<span
+  class={`material-symbols-rounded ${className}`}
+  style={{
+    fontSize: size,
+    color: color,
+    fontVariationSettings: `'FILL' 0, 'wght' ${weight}, 'GRAD' ${grade}, 'opsz' ${opticalSize}`,
+  }}
+>
+  {icon}
+</span>

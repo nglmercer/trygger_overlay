@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref,watch } from 'vue';
 import SearchInput from '@components/media/SearchInput.vue';
 import SortDropdown from '@components/media/SortDropdown.vue';
 import ViewToggle from '@components/media/ViewToggle.vue';
 import UsageStats from '@components/media/UsageStats.vue';  
 import EmptyState from '@components/media/EmptyState.vue';
 import UploadTab from '@components/media/UploadTab.vue';
+import MediaGallery from '@components/content/MediaGallery.vue';
+import { mediaApi,type MediaType } from '@utils/fetch/fetchapi.ts';
 type Tab = 'Images' | 'Videos' | 'Sounds' | 'Upload';
 type ViewMode = 'grid' | 'list';
 
@@ -15,15 +17,38 @@ const TABS: { id: Tab; icon: string }[] = [
   { id: 'Sounds', icon: 'audio_file' },
   { id: 'Upload', icon: 'upload_file' },
 ];
+const tabsType: Record<Exclude<Tab, 'Upload'>, MediaType> = {
+  'Images': 'image',
+  'Videos': 'video',
+  'Sounds': 'audio'
+};
 
 const activeTab = ref<Tab>('Images');
 const viewMode = ref<ViewMode>('grid');
+const mediaItems = ref<any[]>([]);
 
-
+// Watch for changes in activeTab and fetch corresponding media
+watch(
+  () => activeTab.value,
+  async (newTab) => {
+    if (!newTab || newTab === 'Upload')return;
+    try {
+      if (tabsType[newTab]) {
+        const result  = await mediaApi.getByType(tabsType[newTab]);
+        console.log("result",result)
+        mediaItems.value = result;
+      } 
+    } catch (error) {
+      console.error('Error fetching media:', error);
+      mediaItems.value = [];
+    }
+  },
+  { immediate: true } // Fetch data immediately when component mounts
+);
 </script>
 
 <template>
-  <div class="w-full max-w-5xl bg-neutral-800 rounded-lg shadow-2xl flex flex-col max-h-[90vh] origin-center transition-transform duration-300 font-sans">
+  <div class="w-full max-w-5xl min-h-[50dvh] bg-neutral-800 rounded-lg shadow-2xl flex flex-col max-h-[90vh] origin-center transition-transform duration-300 font-sans">
     <!-- Header -->
     <header class="bg-neutral-900/70 p-4 rounded-t-lg flex-shrink-0">
       <div class="flex flex-wrap items-center gap-4">
@@ -64,12 +89,15 @@ const viewMode = ref<ViewMode>('grid');
     </nav>
     
     <!-- Content -->
-    <main class="flex-grow overflow-y-auto bg-neutral-800 rounded-b-lg p-4">
-      <template v-if="activeTab !== 'Upload'">
+    <main class="flex-grow overflow-y-auto bg-neutral-800 rounded-b-lg p-4 justify-center align-center">
+      <template v-if="activeTab === 'Upload'">
+        <UploadTab />
+      </template>
+      <template v-else-if="mediaItems.length === 0">
         <EmptyState :type="activeTab" @go-upload="activeTab = 'Upload'" />
       </template>
       <template v-else>
-        <UploadTab />
+        <MediaGallery :media-type="tabsType[activeTab]"/>
       </template>
     </main>
   </div>

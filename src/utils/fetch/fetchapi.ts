@@ -50,13 +50,16 @@ export class MediaApi extends PrefixedApi {
   }
 
   // Listar todos los medios
-  async list(fetchOptions: FetchOptions = {}): Promise<MediaItem[]> {
-    return this.get<MediaItem[]>('/data', fetchOptions);
+  async list(fetchOptions: FetchOptions = {}): Promise<Record<string, MediaItem>> {
+    return this.get<Record<string, MediaItem>>('/data', fetchOptions);
   }
 
   // Eliminar medio por id
   async remove(id: string, fetchOptions: FetchOptions = {}): Promise<{ message: string }> {
     return this.delete<{ message: string }>(`/${id}`, fetchOptions);
+  }
+  async getByType(type: MediaType, fetchOptions: FetchOptions = {}): Promise<MediaItem[]> {
+    return this.get<MediaItem[]>(`/data/${type}`, fetchOptions);
   }
 }
 

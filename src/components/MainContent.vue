@@ -10,10 +10,7 @@
       -->
       
       <template #Images>
-        <div>
-          <h2 class="text-2xl font-semibold text-cyan-400 mb-2">Galería de Imágenes</h2>
-          <p>Este contenido se muestra cuando la pestaña 'Images' está activa.</p>
-        </div>
+        <MediaElements type="image" />
       </template>
 
       <template #Videos>
@@ -39,4 +36,11 @@
 <script setup lang="ts">
 // Importamos los componentes que vamos a usar en este "contenedor"
 import TabContent from '@components/content/TabContent.vue';
+import MediaElements from './content/MediaElements.vue';
+import { mediaApi } from '@utils/fetch/fetchapi';
+async function getMedia(type?:string) {
+        const media = await mediaApi.list()
+        console.log("media",media)
+}
+getMedia()
 </script>
