@@ -45,6 +45,10 @@ watch(
   },
   { immediate: true } // Fetch data immediately when component mounts
 );
+const handleSearch = (query: string) => {
+  console.log("query",query);
+  // IMPLEMENT example: not work //mediaItems.value = mediaItems.value.filter((item) => item.name.includes(query));
+}
 </script>
 
 <template>
@@ -54,7 +58,7 @@ watch(
       <div class="flex flex-wrap items-center gap-4">
         <h1 class="text-2xl font-normal text-white pr-4">Select Media</h1>
         <div class="flex-grow hidden md:block"></div>
-        <div class="order-3 w-full md:w-auto md:order-none"><SearchInput /></div>
+        <div class="order-3 w-full md:w-auto md:order-none"><SearchInput  @search="handleSearch" /></div>
         <SortDropdown />
         <ViewToggle v-model:viewMode="viewMode" />
         <div class="flex-grow"></div>

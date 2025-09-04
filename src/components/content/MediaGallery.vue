@@ -23,11 +23,8 @@
                 <!-- Área de vista previa dinámica por tipo -->
                 <div class="aspect-w-1 aspect-h-1 aspect-16:9 aspect-3/2 w-full flex items-center justify-center bg-black/20 overflow-hidden">
                     <!-- Vista previa para imágenes con URL base personalizada -->
-                    <img v-if="item.type === 'image' && item.url" :src="getFullImageUrl(item.url)" :alt="item.name || 'Imagen'"
-                        class="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" />
-                    <!-- Iconos para otros tipos -->
-                    <MaterialVue v-else-if="item.type === 'video'" class="text-5xl text-slate-500">videocam</MaterialVue>
-                    <MaterialVue v-else-if="item.type === 'audio'" class="text-5xl text-slate-500">audiotrack</MaterialVue>
+                    <PreviewSrc v-if="(item.type === 'image' || item.type === 'audio' || item.type === 'video') && item.url" :item="item" :getFullImageUrl="getFullImageUrl" 
+                        />
                     <MaterialVue v-else class="text-5xl text-slate-500">help_outline</MaterialVue>
                 </div>
 
@@ -37,8 +34,8 @@
                         {{ item.name || 'Sin Nombre' }}
                     </p>
                     <div class="flex items-center space-x-2 flex-shrink-0">
-                        <button @click="editMedia(item.id)" class="text-slate-400 hover:text-white transition-colors">
-                            <MaterialVue>edit</MaterialVue>
+                        <button @click="DeleteMedia(item.id)" class="text-slate-400 hover:text-red-500 transition-colors">
+                            <MaterialVue>delete</MaterialVue>
                         </button>
                     </div>
                 </div>
@@ -50,9 +47,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { mediaApi } from '@utils/fetch/fetchapi';
+import { emitter } from '@utils/Emitter';
 import type { MediaItem, MediaType } from '@utils/fetch/fetchapi';
 import MaterialVue from '@components/static/MaterialVue.vue';
-
+import PreviewSrc from './Preview-src.vue';
 // --- PROPS: Entradas del componente, controladas por el padre ---
 interface Props {
   mediaType: MediaType;
@@ -72,7 +70,7 @@ const emit = defineEmits<{
 const mediaItems = ref<MediaItem[]>([]);
 const isLoading = ref<boolean>(true);
 const error = ref<string | null>(null);
-
+const selectedItem = ref<MediaItem | null>(null);
 // --- LÓGICA ---
 const getFullImageUrl = (relativePath: string): string => {
   if (!props.imageBaseUrl || relativePath.startsWith('http')) {
@@ -120,8 +118,23 @@ const fetchMedia = async (type: MediaType) => {
   }
 };
 
-const editMedia = (id: string) => {
-  console.log('Editando:', id);
+const DeleteMedia = async (id: string) => {
+  console.log('DeleteMedia:', id);
+  const itemName = mediaItems.value.find(item => item.id === id)?.name;
+  try {
+    await mediaApi.remove(id);
+    mediaItems.value = mediaItems.value.filter(item => item.id !== id);
+        emitter.emit('show-notification', {
+          type: 'success',
+          message: `Archivo ${itemName} eliminado con éxito.`,
+        });
+  } catch (err: any) {
+    console.error(`Fallo al eliminar el elemento ${id}:`, err);
+    emitter.emit('show-notification', {
+      type: 'error',
+      message: `Error al eliminar el archivo ${itemName}.`,
+    });
+  }
 };
 
 // --- REACTIVIDAD ---

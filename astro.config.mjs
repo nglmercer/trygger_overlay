@@ -10,6 +10,12 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()]
   },
-
-  integrations: [vue()]
+  integrations: [vue({
+      template: {
+        compilerOptions: {
+          // Tratar todas las etiquetas con un guion como elementos personalizados
+          isCustomElement: (tag) => tag.includes('-')
+        }
+      }
+    })]
 });

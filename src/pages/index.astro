@@ -4,11 +4,13 @@ import Tabs from '../components/tabs.astro';
 import Upload from '../components/media/upload.vue';
 import NotificationContainer from '@components/NotificationContainer.vue';
 import MainContent from '@components/MainContent.vue';
+import FormExample from '@components/FormExample.vue';
 ---
 
 <Layout>
 	<Tabs activeTab='Images'/>
 	<MainContent client:only="vue"/>
+	<FormExample client:only="vue"/>
 	<NotificationContainer client:only="vue"/>
 
 	<dlg-cont class="upload_modal">
