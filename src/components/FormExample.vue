@@ -1,32 +1,36 @@
 <template>
   <div class="min-h-screen bg-gray-900 text-white p-6">
     <div class="max-w-md mx-auto bg-gray-800 rounded-lg p-6 shadow-xl">
-      <h2 class="text-xl font-semibold mb-6 text-center">New Image Trigger</h2>
+      <!-- El título ahora es dinámico -->
+      <h2 class="text-xl font-semibold mb-6 text-center">New {{ form.type }} Trigger</h2>
       
       <form @submit.prevent="handleSubmit" class="space-y-6">
-        <!-- Image Selection -->
-        <div class="text-center">
+        
+        <!-- File Selection (para image y video) -->
+        <div class="text-center" v-if="form.type === 'image' || form.type === 'video' || form.type === 'audio'">
           <button 
             type="button" 
-            @click="selectImage"
+            @click="selectFile"
             class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-md font-medium transition-colors duration-200 flex items-center gap-2 mx-auto"
           >
-            <MaterialVue size="sm">image</MaterialVue>
-            SELECT IMAGE
+            <MaterialVue size="sm">{{ form.type === 'image' ? 'image' : form.type === 'video' ? 'videocam' : 'volume_up' }}</MaterialVue>
+            SELECT {{ form.type.toUpperCase() }}
           </button>
         </div>
-         <!-- Name Input -->
-         <div class="space-y-2 space-x-2">
+
+         <!-- Name Input (común a todos) -->
+         <div class="space-y-2">
           <label class="text-sm font-medium text-gray-300">Name</label>
           <input 
             type="text" 
-            v-model="Imageform.name"
-            class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            v-model="form.name"
+            class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             placeholder="Enter name"
           />
         </div>
-        <!-- Size Slider -->
-        <div class="space-y-2">
+
+        <!-- Size Slider (solo para image y video) -->
+        <div v-if="'size' in form" class="space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-sm font-medium text-gray-300">Size (%)</label>
             <div class="flex items-center gap-2">
@@ -38,41 +42,63 @@
               type="range" 
               min="1" 
               max="100" 
-              v-model="Imageform.size"
+              v-model="form.size"
               class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
             <span class="text-sm bg-gray-700 px-2 py-1 rounded min-w-[3rem] text-center">
-              {{ Imageform.size }}%
+              {{ form.size }}%
             </span>
           </div>
         </div>
 
-        <!-- Duration Settings -->
+        <!-- Volume Slider (solo para video y audio) -->
+        <div v-if="'volume' in form" class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-medium text-gray-300">Volume (%)</label>
+             <div class="flex items-center gap-2">
+              <MaterialVue size="sm" class="text-gray-400">volume_up</MaterialVue>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <input 
+              type="range" 
+              min="0" 
+              max="100" 
+              v-model="form.volume"
+              class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+            />
+            <span class="text-sm bg-gray-700 px-2 py-1 rounded min-w-[3rem] text-center">
+              {{ form.volume }}%
+            </span>
+          </div>
+        </div>
+
+        <!-- Duration Settings (común a todos) -->
         <div class="space-y-3">
-          <label class="text-sm font-medium text-gray-300">Minimum duration</label>
+          <label class="text-sm font-medium text-gray-300">Minimum duration (seconds)</label>
           <div class="flex items-center gap-3">
             <input 
               type="number" 
               min="1"
-              v-model="Imageform.duration"
-              :disabled="Imageform.maxDuration"
+              v-model="form.duration"
+              :disabled="form.maxDuration"
               class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed w-20"
             />
             <label class="flex items-center gap-2 cursor-pointer">
               <input 
                 type="checkbox" 
-                v-model="Imageform.maxDuration"
+                v-model="form.maxDuration"
                 class="sr-only"
               />
               <div class="relative">
                 <div :class="[
                   'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200',
-                  Imageform.maxDuration 
+                  form.maxDuration 
                     ? 'bg-indigo-600 border-indigo-600' 
                     : 'border-gray-500'
                 ]">
                   <MaterialVue 
-                    v-if="Imageform.maxDuration" 
+                    v-if="form.maxDuration" 
                     size="xs" 
                     class="text-white"
                   >
@@ -85,15 +111,15 @@
           </div>
         </div>
 
-        <!-- Position Settings -->
-        <div class="space-y-3">
+        <!-- Position Settings (solo para image y video) -->
+        <div v-if="'position' in form" class="space-y-3">
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-1">X position</label>
               <input 
                 type="number" 
-                v-model="Imageform.position.x"
-                :disabled="Imageform.randomPosition"
+                v-model="form.position.x"
+                :disabled="form.randomPosition"
                 class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="0"
               />
@@ -102,8 +128,8 @@
               <label class="block text-sm font-medium text-gray-300 mb-1">Y position</label>
               <input 
                 type="number" 
-                v-model="Imageform.position.y"
-                :disabled="Imageform.randomPosition"
+                v-model="form.position.y"
+                :disabled="form.randomPosition"
                 class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="0"
               />
@@ -113,18 +139,18 @@
           <label class="flex items-center gap-2 cursor-pointer">
             <input 
               type="checkbox" 
-              v-model="Imageform.randomPosition"
+              v-model="form.randomPosition"
               class="sr-only"
             />
             <div class="relative">
               <div :class="[
                 'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200',
-                Imageform.randomPosition 
+                form.randomPosition 
                   ? 'bg-indigo-600 border-indigo-600' 
                   : 'border-gray-500'
               ]">
                 <MaterialVue 
-                  v-if="Imageform.randomPosition" 
+                  v-if="form.randomPosition" 
                   size="xs" 
                   class="text-white"
                 >
@@ -158,53 +184,126 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
-import MaterialVue from '@components/static/MaterialVue.vue'
+import { ref, watch } from "vue"
+import MaterialVue from '@components/static/MaterialVue.vue';
+import { DlgCont } from '@litcomponents/modal'
+import { emitter } from "@utils/Emitter";
+// --- TYPE DEFINITIONS ---
+type FormTypes = 'image' | 'video' | 'audio';
 
-interface ImageForm {
-  name: string,
-  type: string,
-  size: number,
-  duration: number,
-  maxDuration: boolean,
-  position: {
-    x: number,
-    y: number,
-  },
-  randomPosition: boolean,
+interface BaseForm {
+  name: string;
+  type: FormTypes;
+  duration: number;
+  maxDuration: boolean;
 }
 
-const Imageform = ref<ImageForm>({
-  name: "hola",
+interface ImageForm extends BaseForm {
+  type: 'image';
+  size: number;
+  position: { x: number; y: number };
+  randomPosition: boolean;
+}
+
+interface VideoForm extends BaseForm {
+  type: 'video';
+  size: number;
+  volume: number;
+  position: { x: number; y: number };
+  randomPosition: boolean;
+}
+
+interface AudioForm extends BaseForm {
+  type: 'audio';
+  volume: number;
+}
+
+// Union type for the form state
+type TriggerForm = ImageForm | VideoForm | AudioForm;
+
+// --- DEFAULT FORM STATES ---
+const defaultImageData: ImageForm = {
+  name: "",
   type: "image",
-  size: 50, // Default to 50%
+  size: 50,
   duration: 5,
   maxDuration: false,
-  position: {
-    x: 0,
-    y: 0,
-  },
+  position: { x: 0, y: 0 },
   randomPosition: false,
+};
+
+const defaultVideoData: VideoForm = {
+  name: "",
+  type: "video",
+  size: 50,
+  volume: 50,
+  duration: 5,
+  maxDuration: false,
+  position: { x: 0, y: 0 },
+  randomPosition: false,
+};
+
+const defaultAudioData: AudioForm = {
+  name: "",
+  type: "audio",
+  volume: 50,
+  duration: 5,
+  maxDuration: false,
+};
+
+// --- REACTIVE STATE ---
+const formType = ref<FormTypes>('image');
+// The main form state, its type will be dynamically handled
+const form = ref<TriggerForm>(JSON.parse(JSON.stringify(defaultImageData)));
+
+// --- LOGIC ---
+
+// Function to reset the form state based on the selected type
+const setFormByType = (type: FormTypes) => {
+  switch (type) {
+    case 'image':
+      form.value = JSON.parse(JSON.stringify(defaultImageData)); // Use deep copy to avoid mutation issues
+      break;
+    case 'video':
+      form.value = JSON.parse(JSON.stringify(defaultVideoData));
+      break;
+    case 'audio':
+      form.value = JSON.parse(JSON.stringify(defaultAudioData));
+      break;
+  }
+};
+emitter.on('TriggerForm:formType', (type: FormTypes) => {
+  formType.value = type;
+  setFormByType(type);
 })
+emitter.emit('TriggerForm:formType', 'video')
+// Watch for changes in the formType dropdown and reset the form
+watch(formType, (newType) => {
+  setFormByType(newType);
+});
 
-const selectImage = () => {
-  // TODO: Implement image selection logic
-  console.log("Select image clicked")
+const selectFile = () => {
+  console.log(`Select ${form.value.type} file clicked`);
+  emitter.emit('TriggerForm:selectFile', form.value.type)
+  const modal = document.querySelector('.upload_modal') as DlgCont;
+  modal.show();
 }
-
 const handleSubmit = () => {
-  // TODO: Implement form submission logic
-  console.log("Form submitted:", Imageform.value)
+  console.log("Form submitted:", form.value);
+  // Here you can send `form.value` to your backend or state management.
+  // The object will have the correct structure based on its `type` property.
 }
 
 const handleCancel = () => {
-  // TODO: Implement cancel logic
-  console.log("Form cancelled")
+  // Reset the form to its default state for the current type
+  setFormByType(formType.value);
+  console.log("Form cancelled and reset to defaults");
 }
+
 </script>
 
 <style>
-/* Custom slider styling */
+/* Custom slider styling (sin cambios) */
 .slider::-webkit-slider-thumb {
   appearance: none;
   width: 20px;

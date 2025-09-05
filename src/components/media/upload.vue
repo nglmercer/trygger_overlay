@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref,watch } from 'vue';
+import { ref, watch } from 'vue';
 import SearchInput from '@components/media/SearchInput.vue';
 import SortDropdown from '@components/media/SortDropdown.vue';
 import ViewToggle from '@components/media/ViewToggle.vue';
@@ -7,7 +7,9 @@ import UsageStats from '@components/media/UsageStats.vue';
 import EmptyState from '@components/media/EmptyState.vue';
 import UploadTab from '@components/media/UploadTab.vue';
 import MediaGallery from '@components/content/MediaGallery.vue';
-import { mediaApi,type MediaType } from '@utils/fetch/fetchapi.ts';
+import { mediaApi, type MediaType } from '@utils/fetch/fetchapi.ts';
+import { emitter } from '@utils/Emitter';
+import { TriggerEvents } from 'src/config/events';
 type Tab = 'Images' | 'Videos' | 'Sounds' | 'Upload';
 type ViewMode = 'grid' | 'list';
 
@@ -23,19 +25,30 @@ const tabsType: Record<Exclude<Tab, 'Upload'>, MediaType> = {
   'Sounds': 'audio'
 };
 
+const mediaTypeToTab: Record<MediaType, Tab> = {
+  'image': 'Images',
+  'video': 'Videos',
+  'audio': 'Sounds'
+};
+
 const activeTab = ref<Tab>('Images');
 const viewMode = ref<ViewMode>('grid');
 const mediaItems = ref<any[]>([]);
+
+emitter.on(TriggerEvents.SelectFile, (type: MediaType) => {
+  console.log("type", type);
+  activeTab.value = mediaTypeToTab[type];
+})
 
 // Watch for changes in activeTab and fetch corresponding media
 watch(
   () => activeTab.value,
   async (newTab) => {
-    if (!newTab || newTab === 'Upload')return;
+    if (!newTab || newTab === 'Upload') return;
     try {
       if (tabsType[newTab]) {
-        const result  = await mediaApi.getByType(tabsType[newTab]);
-        console.log("result",result)
+        const result = await mediaApi.getByType(tabsType[newTab]);
+        console.log("result", result)
         mediaItems.value = result;
       } 
     } catch (error) {
@@ -45,27 +58,33 @@ watch(
   },
   { immediate: true } // Fetch data immediately when component mounts
 );
+
 const handleSearch = (query: string) => {
-  console.log("query",query);
+  console.log("query", query);
   // IMPLEMENT example: not work //mediaItems.value = mediaItems.value.filter((item) => item.name.includes(query));
 }
 </script>
-
 <template>
   <div class="w-full max-w-5xl min-h-[50dvh] bg-neutral-800 rounded-lg shadow-2xl flex flex-col max-h-[90vh] origin-center transition-transform duration-300 font-sans">
     <!-- Header -->
     <header class="bg-neutral-900/70 p-4 rounded-t-lg flex-shrink-0">
-      <div class="flex flex-wrap items-center gap-4">
-        <h1 class="text-2xl font-normal text-white pr-4">Select Media</h1>
-        <div class="flex-grow hidden md:block"></div>
-        <div class="order-3 w-full md:w-auto md:order-none"><SearchInput  @search="handleSearch" /></div>
-        <SortDropdown />
-        <ViewToggle v-model:viewMode="viewMode" />
-        <div class="flex-grow"></div>
-        <UsageStats />
-        <button class="text-white/70 hover:text-white transition-colors" aria-label="Close">
-          <span class="material-symbols-outlined">close</span>
-        </button>
+      <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 w-full">
+          <h1 class="text-2xl font-medium text-white tracking-tight">Select Media</h1>
+          <button 
+            class="p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 absolute top-4 right-4" 
+            aria-label="Close"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        <div class="flex sm:flex-nowrap flex-wrap items-center space-x-4"> 
+          <SearchInput @search="handleSearch" />
+          <SortDropdown />
+          <ViewToggle v-model:viewMode="viewMode" />
+        </div>
+        <div class="hidden md:block flex-1"></div>
+        <div class="flex items-center gap-4 mx-6">
+          <UsageStats />
+        </div>
       </div>
     </header>
 
@@ -73,7 +92,7 @@ const handleSearch = (query: string) => {
 
     <!-- Tabs -->
     <nav class="relative flex-shrink-0 bg-neutral-800">
-      <div class="flex items-center justify-start border-b border-white/10">
+      <div class="flex items-center justify-start border-b border-white/10 overflow-auto">
         <button
           v-for="tab in TABS"
           :key="tab.id"
@@ -93,7 +112,7 @@ const handleSearch = (query: string) => {
     </nav>
     
     <!-- Content -->
-    <main class="flex-grow overflow-y-auto bg-neutral-800 rounded-b-lg p-4 justify-center align-center">
+    <main class="flex-grow overflow-y-auto bg-neutral-800 rounded-b-lg p-2 justify-center align-center">
       <template v-if="activeTab === 'Upload'">
         <UploadTab />
       </template>

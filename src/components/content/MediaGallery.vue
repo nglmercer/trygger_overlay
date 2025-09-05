@@ -25,8 +25,11 @@
                     <!-- Vista previa para imágenes con URL base personalizada -->
                     <PreviewSrc v-if="(item.type === 'image' || item.type === 'audio' || item.type === 'video') && item.url" :item="item" :getFullImageUrl="getFullImageUrl" 
                         />
-                    <MaterialVue v-else class="text-5xl text-slate-500">help_outline</MaterialVue>
-                </div>
+                        <MaterialVue v-else class="text-5xl text-slate-500">help_outline</MaterialVue>
+                        <MaterialVue v-if="(item.type === selectedType) && item.url" @click="checkMedia(item)" :opticalSize="24" class="bg-blue-600 absolute top-4 right-4 rounded-2xl flex items-center justify-center p-2 hover:scale-125">
+                          check
+                        </MaterialVue>
+                  </div>
 
                 <!-- Sección de Información y Acciones -->
                 <div class="p-3 flex items-center justify-between bg-slate-800">
@@ -45,9 +48,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, defineEmits  } from 'vue';
 import { mediaApi } from '@utils/fetch/fetchapi';
 import { emitter } from '@utils/Emitter';
+import { MediaEvents, TriggerEvents } from 'src/config/events';
 import type { MediaItem, MediaType } from '@utils/fetch/fetchapi';
 import MaterialVue from '@components/static/MaterialVue.vue';
 import PreviewSrc from './Preview-src.vue';
@@ -71,6 +75,7 @@ const mediaItems = ref<MediaItem[]>([]);
 const isLoading = ref<boolean>(true);
 const error = ref<string | null>(null);
 const selectedItem = ref<MediaItem | null>(null);
+const selectedType = ref<MediaType | null>(null);
 // --- LÓGICA ---
 const getFullImageUrl = (relativePath: string): string => {
   if (!props.imageBaseUrl || relativePath.startsWith('http')) {
@@ -136,7 +141,14 @@ const DeleteMedia = async (id: string) => {
     });
   }
 };
-
+const checkMedia = (item: MediaItem) => {
+  selectedItem.value = item;
+  console.log("selectedItem.value", selectedItem.value,selectedType.value);
+  emitter.emit(MediaEvents.selectedMedia+':'+selectedType.value,item)
+}
+emitter.on(TriggerEvents.SelectFile, (type: MediaType) => {
+  selectedType.value = type;
+})
 // --- REACTIVIDAD ---
 // Observamos cambios en la prop `mediaType`. Cuando el padre la cambia,
 // esta función se ejecuta para volver a cargar los datos.

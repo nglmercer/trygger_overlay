@@ -5,7 +5,8 @@
       filled ? 'material-symbols-filled' : '',
       outlined ? 'material-symbols-outlined' : '',
       rounded ? 'material-symbols-rounded' : '',
-      sharp ? 'material-symbols-sharp' : ''
+      sharp ? 'material-symbols-sharp' : '',
+      'hover:cursor-pointer'
     ]"
     :style="{
       'font-variation-settings': 
