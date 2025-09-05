@@ -7,7 +7,7 @@
       <form @submit.prevent="handleSubmit" class="space-y-6">
         
         <!-- File Selection (para image y video) -->
-        <div class="text-center" v-if="form.type === 'image' || form.type === 'video' || form.type === 'audio'">
+        <div class="text-center" v-if="(form.type === 'image' || form.type === 'video' || form.type === 'audio')">
           <button 
             type="button" 
             @click="selectFile"
@@ -15,7 +15,10 @@
           >
             <MaterialVue size="sm">{{ form.type === 'image' ? 'image' : form.type === 'video' ? 'videocam' : 'volume_up' }}</MaterialVue>
             SELECT {{ form.type.toUpperCase() }}
-          </button>
+          </button> 
+          <div class="aspect-video" v-if="formItem.url" v-show="formItem.url">
+            <PreviewSrc v-if="(formItem.type === 'image' || formItem.type === 'audio' || formItem.type === 'video') && formItem.url" :item="formItem" :getFullImageUrl="getFullImageUrl" />
+          </div>
         </div>
 
          <!-- Name Input (común a todos) -->
@@ -184,10 +187,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { ref, watch,computed } from "vue"
 import MaterialVue from '@components/static/MaterialVue.vue';
 import { DlgCont } from '@litcomponents/modal'
 import { emitter } from "@utils/Emitter";
+import { MediaEvents } from "src/config/events";
+import type { MediaItem, MediaType } from "@utils/fetch/fetchapi";
+import PreviewSrc from "./content/Preview-src.vue";
+import { getFullImageUrl } from "@utils/Url";
 // --- TYPE DEFINITIONS ---
 type FormTypes = 'image' | 'video' | 'audio';
 
@@ -196,6 +203,8 @@ interface BaseForm {
   type: FormTypes;
   duration: number;
   maxDuration: boolean;
+  active: boolean;
+  item: Partial<MediaItem>;
 }
 
 interface ImageForm extends BaseForm {
@@ -224,38 +233,46 @@ type TriggerForm = ImageForm | VideoForm | AudioForm;
 // --- DEFAULT FORM STATES ---
 const defaultImageData: ImageForm = {
   name: "",
+  item: {} as Partial<MediaItem>,
   type: "image",
   size: 50,
   duration: 5,
   maxDuration: false,
   position: { x: 0, y: 0 },
   randomPosition: false,
+  active: true,
 };
 
 const defaultVideoData: VideoForm = {
   name: "",
   type: "video",
+  item: {} as Partial<MediaItem>,
   size: 50,
   volume: 50,
   duration: 5,
   maxDuration: false,
   position: { x: 0, y: 0 },
   randomPosition: false,
+  active: true,
 };
 
 const defaultAudioData: AudioForm = {
   name: "",
+  item: {} as Partial<MediaItem>,
   type: "audio",
   volume: 50,
   duration: 5,
   maxDuration: false,
+  active: true,
 };
 
 // --- REACTIVE STATE ---
 const formType = ref<FormTypes>('image');
 // The main form state, its type will be dynamically handled
 const form = ref<TriggerForm>(JSON.parse(JSON.stringify(defaultImageData)));
-
+const formItem = computed(() => {
+  return {...form.value.item,type:formType.value}
+});
 // --- LOGIC ---
 
 // Function to reset the form state based on the selected type
@@ -275,8 +292,19 @@ const setFormByType = (type: FormTypes) => {
 emitter.on('TriggerForm:formType', (type: FormTypes) => {
   formType.value = type;
   setFormByType(type);
-})
+});
+// temporal emit, to test the form type
 emitter.emit('TriggerForm:formType', 'video')
+
+emitter.on(MediaEvents.selectedMedia, (data: { item: MediaItem, type: MediaType }) => {
+  console.log("selectedMedia", data);
+  if (!data || !data.type )return;
+  if (data.type !== formType.value)return;
+  form.value.item = data.item;
+  console.log("form.value.item", form.value.item,formItem.value);
+  const modal = document.querySelector('.upload_modal') as DlgCont;
+  modal.hide();
+})
 // Watch for changes in the formType dropdown and reset the form
 watch(formType, (newType) => {
   setFormByType(newType);

@@ -113,15 +113,17 @@ const handleSearch = (query: string) => {
     
     <!-- Content -->
     <main class="flex-grow overflow-y-auto bg-neutral-800 rounded-b-lg p-2 justify-center align-center">
-      <template v-if="activeTab === 'Upload'">
-        <UploadTab />
-      </template>
-      <template v-else-if="mediaItems.length === 0">
-        <EmptyState :type="activeTab" @go-upload="activeTab = 'Upload'" />
-      </template>
-      <template v-else>
-        <MediaGallery :media-type="tabsType[activeTab]"/>
-      </template>
+      <UploadTab :class="{ 'hidden': activeTab !== 'Upload' }" />
+      <EmptyState 
+        v-if="mediaItems.length === 0"
+        :type="activeTab" 
+        @go-upload="activeTab = 'Upload'"
+        :class="{ 'hidden': activeTab === 'Upload' }"
+      />
+      <MediaGallery 
+        :media-type="tabsType[activeTab as Exclude<Tab, 'Upload'>]"
+        :class="{ 'hidden': activeTab === 'Upload' || mediaItems.length === 0 }"
+      />
     </main>
   </div>
 </template>

@@ -77,12 +77,12 @@ const error = ref<string | null>(null);
 const selectedItem = ref<MediaItem | null>(null);
 const selectedType = ref<MediaType | null>(null);
 // --- LÓGICA ---
-const getFullImageUrl = (relativePath: string): string => {
-  if (!props.imageBaseUrl || relativePath.startsWith('http')) {
+const getFullImageUrl = (relativePath: string,imageBaseUrl: string = props.imageBaseUrl): string => {
+  if (!imageBaseUrl || relativePath.startsWith('http')) {
     return relativePath;
   }
   // Elimina slashes duplicados entre la base y la ruta
-  return `${props.imageBaseUrl.replace(/\/$/, '')}/${relativePath.replace(/^\//, '')}`;
+  return `${imageBaseUrl.replace(/\/$/, '')}/${relativePath.replace(/^\//, '')}`;
 };
 
 const transformMediaObjectToArray = (mediaObject: Record<string, any>, type: MediaType): MediaItem[] => {
@@ -98,6 +98,7 @@ const transformMediaObjectToArray = (mediaObject: Record<string, any>, type: Med
 };
 
 const fetchMedia = async (type: MediaType) => {
+  if (!type) return;
   isLoading.value = true;
   error.value = null;
   mediaItems.value = [];
@@ -143,8 +144,11 @@ const DeleteMedia = async (id: string) => {
 };
 const checkMedia = (item: MediaItem) => {
   selectedItem.value = item;
-  console.log("selectedItem.value", selectedItem.value,selectedType.value);
-  emitter.emit(MediaEvents.selectedMedia+':'+selectedType.value,item)
+//  console.log("selectedItem.value", selectedItem.value,selectedType.value);
+  emitter.emit(MediaEvents.selectedMedia, {
+    item: JSON.parse(JSON.stringify(item)), // Convert Proxy to plain object
+    type: selectedType.value
+  })
 }
 emitter.on(TriggerEvents.SelectFile, (type: MediaType) => {
   selectedType.value = type;

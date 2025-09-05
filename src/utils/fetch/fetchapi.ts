@@ -4,6 +4,56 @@ import apiConfig from './config/apiConfig';
 
 // Tipos para el API de medios
 export type MediaType = 'image' | 'audio' | 'video';
+export type FormTypes = 'image' | 'video' | 'audio';
+
+export interface BaseForm {
+  name: string;
+  type: FormTypes;
+  duration: number;
+  maxDuration: boolean;
+  active: boolean;
+  item: Partial<MediaItem>;
+}
+
+interface ImageForm extends BaseForm {
+  type: 'image';
+  size: number;
+  position: { x: number; y: number };
+  randomPosition: boolean;
+}
+
+interface VideoForm extends BaseForm {
+  type: 'video';
+  size: number;
+  volume: number;
+  position: { x: number; y: number };
+  randomPosition: boolean;
+}
+
+interface AudioForm extends BaseForm {
+  type: 'audio';
+  volume: number;
+}
+
+// Union type for the form state
+export type TriggerForm = ImageForm | VideoForm | AudioForm;
+// Type Guards
+const isImageForm = (form: TriggerForm): form is ImageForm => {
+  return form.type === 'image';
+};
+
+const isVideoForm = (form: TriggerForm): form is VideoForm => {
+  return form.type === 'video';
+};
+
+const isAudioForm = (form: TriggerForm): form is AudioForm => {
+  return form.type === 'audio';
+};
+export const TriggerFormUtils = {
+  isImageForm,
+  isVideoForm,
+  isAudioForm,
+}
 export interface MediaItem {
   id: string;
   type: MediaType;
