@@ -1,7 +1,8 @@
 const TriggerEvents = {
   SelectFile: 'TriggerForm:selectFile',
   Submit: 'TriggerForm:submit',
-  FormType: 'TriggerForm:formType'
+  FormType: 'TriggerForm:formType',
+  setForm: 'TriggerForm:setForm',
 }
 const MediaEvents = {
   selectedMedia: 'MediaGallery:selectedMedia',

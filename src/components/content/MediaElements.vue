@@ -66,7 +66,6 @@ const editMedia = (id: number | string) => {
 mediaItems.value = [
     {
         name: 'Video 1',
-        type: 'video' as const, // Importante: usar 'as const' para literal types
         item: {
             id: "1",
             url: 'https://www.youtube.com/watch?v=123456',
@@ -88,7 +87,6 @@ mediaItems.value = [
     // Ejemplo de ImageForm
     {
         name: 'Image 1',
-        type: 'image' as const,
         item: {
             id: "2",
             url: 'https://example.com/image.jpg',
@@ -106,7 +104,6 @@ mediaItems.value = [
     // Ejemplo de AudioForm
     {
         name: 'Audio 1',
-        type: 'audio' as const,
         item: {
             id: "3",
             url: 'https://example.com/audio.mp3',

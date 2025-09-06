@@ -399,7 +399,9 @@ emitter.on(MediaEvents.selectedMedia, (data: { item: MediaItem, type: MediaType 
     const modal = document.querySelector('.upload_modal') as DlgCont;
     modal.hide();
 })
-
+emitter.on(TriggerEvents.setForm, (data: TriggerForm) => {
+    form.value = data;
+})
 // Watch for changes in the formType dropdown and reset the form
 watch(formType, (newType) => {
     setFormByType(newType);
@@ -437,9 +439,10 @@ const handleCancel = () => {
         position: { x: 0, y: 0 },
         randomPosition: false
     };
-    
     setFormByType(formType.value);
-    console.log("Form cancelled and reset to defaults");
+    const newFormData = createFormByType(formType.value);
+    resetForm()
+    console.log("Form cancelled and reset to defaults",newFormData,form.value);
 }
 
 // NUEVA: Función para limpiar completamente el formulario

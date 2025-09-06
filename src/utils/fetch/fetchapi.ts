@@ -1,3 +1,4 @@
+import type { T } from 'node_modules/tailwindcss/dist/types-WlZgYgM8.d.mts';
 import BaseApi, { PrefixedApi } from './commons/BaseApi';
 import type { FetchOptions } from './commons/httpservice';
 import apiConfig from './config/apiConfig';
@@ -56,6 +57,7 @@ export interface BaseTriggerInput {
   maxDuration: boolean;
   active: boolean;
   item: Partial<MediaItem>;
+  type?: FormTypes;
 }
 
 export interface ImageTriggerInput extends BaseTriggerInput {
@@ -117,6 +119,16 @@ export const TriggerFormUtils = {
   isImageInput,
   isVideoInput,
   isAudioInput,
+};
+export const transformTriggersToArray = <T extends TriggerInput>(triggerObject: Record<string, any>, type: MediaType|string): T[] => {
+if (!triggerObject || typeof triggerObject !== 'object') return [];
+    // Demo data generator
+    return Object.keys(triggerObject).map((key, index) => ({
+        id: key,
+        name: `${type}_demo_${index + 1}`,
+        type: type, // Asigna el tipo actual
+        ...triggerObject[key],
+    }));
 };
 
 // Función helper para aplicar valores por defecto según el tipo

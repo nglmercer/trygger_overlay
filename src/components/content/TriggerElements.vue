@@ -2,25 +2,37 @@
       <EmptyComponent 
         v-if="triggerElements.length === 0"
         :config="emptyStateConfig[emptyConfigKey]"
-        @action-click="handleActionClick(props.type)"
+        @action-click="handleOpenForm(props.type)"
       />
-      <MediaGallery 
-        :media-type="emptyStateConfig[emptyConfigKey]"
-        :class="{ 'hidden': emptyConfigKey === 'Groups' || triggerElements.length === 0 }"
-      />
+      <div
+        v-else
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 auto-rows-[minmax(0,_auto)]"
+      >
+        <dataElement
+          v-for="element in triggerElements"
+          :key="element.id"
+          :element="element"
+          :mediaItem="element"
+          :icon="emptyStateConfig[emptyConfigKey].icon"
+          class="aspect-[3/2] w-full"
+          @edit="handleEdit"
+          @toggle="handleToggle"
+        />
+      </div>
 </template>
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import EmptyComponent from './EmptyComponent.vue';
-import type { MediaType } from '@utils/fetch/fetchapi';
+import { triggerApi,transformTriggersToArray, type BaseTriggerInput,type MediaType } from '@utils/fetch/fetchapi';
 import { emptyStateConfig, type EmptyStateConfig, type TabName, typeToTabNameMap } from 'src/config/tabs';
 import { emitter } from '@utils/Emitter';
 import { TriggerEvents } from 'src/config/events';
+import dataElement from '@components/Trigger/dataElement.vue';
 
-const triggerElements   = ref([])
+const triggerElements   = ref<BaseTriggerInput[]>([])
 
 const props = defineProps<{
-  type: string;
+  type: MediaType | string;
 }>();
 
 const emptyConfigKey = computed<TabName>(() => {
@@ -31,9 +43,23 @@ const emptyConfigKey = computed<TabName>(() => {
   console.warn(`Unknown type prop received: ${props.type}. Defaulting to 'Images'.`);
   return 'Images';
 });
-const handleActionClick = (type:string) => {
+const handleOpenForm = (type:string) => {
   if (emptyConfigKey.value === 'Groups') return
   console.log('Action clicked!', type);
   emitter.emit(TriggerEvents.FormType, type)
 };
+const handleEdit = (element: BaseTriggerInput) => {
+  console.log('Edit clicked!', element);
+  emitter.emit(TriggerEvents.FormType, props.type);
+  emitter.emit(TriggerEvents.setForm, element);
+};
+const handleToggle = (element: BaseTriggerInput, enabled: boolean) => {
+  console.log('Toggle clicked!', element, enabled);
+};
+const Elements = async ()=>{
+  const triggers = await triggerApi.list()
+  triggerElements.value = transformTriggersToArray(triggers, props.type)
+    .filter(item => item?.item?.type?.includes(props.type))
+}
+Elements()
 </script>
