@@ -2,14 +2,13 @@
 
 // 1. Definición de las pestañas que se mostrarán en la UI.
 // La propiedad 'active' aquí solo sirve para definir el estado inicial por defecto.
-const tabsNames = ['Images', 'Videos', 'Sounds', 'OBS', 'Groups'] as const;
+const tabsNames = ['Images', 'Videos', 'Sounds', 'Groups'] as const;
 export type TabName = typeof tabsNames[number];
 
 export const tabs = [
   { label: "Images", active: true },
   { label: "Videos", active: false },
   { label: "Sounds", active: false },
-  { label: "OBS", active: false },
   { label: "Groups", active: false },
 ] as const;
 
@@ -47,13 +46,6 @@ export const emptyStateConfig: EmptyStateConfigKeys = {
     buttonText: 'Upload sound',
     buttonIcon: 'upload_file',
   },
-  OBS: {
-    icon: 'settings',
-    title: 'No OBS found',
-    description: 'Upload your first OBS to get started',
-    buttonText: 'Upload OBS',
-    buttonIcon: 'upload_file',
-  },
   Groups: {
     icon: 'group',
     title: 'No groups found',
@@ -83,7 +75,6 @@ export const TabClassnames = {
 export const typeToTabNameMap: Record<string, TabName> = {
   'image': 'Images',
   'video': 'Videos',
-  'sonidos': 'Sounds',
-  'obs': 'OBS',
+  'audio': 'Sounds',
   'groups': 'Groups',
 };

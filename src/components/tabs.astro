@@ -30,11 +30,9 @@ const initialActiveTab = tabs.find(t => t.active)?.label || tabs[0].label;
             {tab.label}
           </b>
           <span class="material-symbols-outlined text-2xl pointer-events-none">
-            {/* ... tus iconos ... */}
             {tab.label === "Images" ? "image" :
              tab.label === "Videos" ? "movie" :
              tab.label === "Sounds" ? "volume_up" :
-             tab.label === "OBS" ? "podcasts" :
              "groups"}
           </span>
         </button>

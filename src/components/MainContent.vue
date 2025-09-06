@@ -18,11 +18,7 @@
       </template>
       
       <template #Sounds>
-        <TriggerElements type="sonidos"/>
-      </template>
-
-      <template #OBS>
-        <TriggerElements type="obs"/>
+        <TriggerElements type="audio"/>
       </template>
 
       <template #Groups>
