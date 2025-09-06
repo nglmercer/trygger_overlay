@@ -53,7 +53,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 // Ajusta la ruta de importación a donde guardaste tu archivo API
-import { mediaApi,TriggerFormUtils } from '@utils/fetch/fetchapi';
+import { triggerApi,TriggerFormUtils } from '@utils/fetch/fetchapi';
 import type { MediaItem,TriggerForm } from '@utils/fetch/fetchapi';
 import MaterialVue from '@components/static/MaterialVue.vue';
 
@@ -120,5 +120,13 @@ mediaItems.value = [
         active: true,
     }
 ];
-
+const getTriggers = async () => {
+    try {
+        const triggers = await triggerApi.list();
+        console.log("triggers",triggers)
+    } catch (error) {
+        console.error("Error fetching triggers:", error);
+    }
+}
+onMounted(getTriggers)
 </script>

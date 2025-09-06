@@ -2,14 +2,66 @@
 
 // 1. Definición de las pestañas que se mostrarán en la UI.
 // La propiedad 'active' aquí solo sirve para definir el estado inicial por defecto.
+const tabsNames = ['Images', 'Videos', 'Sounds', 'OBS', 'Groups'] as const;
+export type TabName = typeof tabsNames[number];
+
 export const tabs = [
   { label: "Images", active: true },
-  { label: "Videos" },
-  { label: "Sounds" },
-  { label: "OBS" },
-  { label: "Groups" },
-];
+  { label: "Videos", active: false },
+  { label: "Sounds", active: false },
+  { label: "OBS", active: false },
+  { label: "Groups", active: false },
+] as const;
 
+export interface EmptyStateConfig {
+  icon: string;
+  title: string;
+  description: string;
+  buttonText: string;
+  buttonIcon: string;
+}
+
+export type EmptyStateConfigKeys = {
+  [K in TabName]: EmptyStateConfig;
+};
+
+export const emptyStateConfig: EmptyStateConfigKeys = {
+  Images: {
+    icon: 'photo_library',
+    title: 'No images found',
+    description: 'Upload your first image to get started',
+    buttonText: 'Upload image',
+    buttonIcon: 'upload_file',
+  },
+  Videos: {
+    icon: 'video_library',
+    title: 'No videos found',
+    description: 'Upload your first video to get started',
+    buttonText: 'Upload video',
+    buttonIcon: 'upload_file',
+  },
+  Sounds: {
+    icon: 'audio_file',
+    title: 'No sounds found',
+    description: 'Upload your first sound to get started',
+    buttonText: 'Upload sound',
+    buttonIcon: 'upload_file',
+  },
+  OBS: {
+    icon: 'settings',
+    title: 'No OBS found',
+    description: 'Upload your first OBS to get started',
+    buttonText: 'Upload OBS',
+    buttonIcon: 'upload_file',
+  },
+  Groups: {
+    icon: 'group',
+    title: 'No groups found',
+    description: 'Upload your first group to get started',
+    buttonText: 'Upload group',
+    buttonIcon: 'upload_file',
+  },
+} as const;
 // 2. Definición de las clases de Tailwind CSS
 
 // Clases comunes para CUALQUIER pestaña, sea activa o no.
@@ -27,4 +79,11 @@ export const TabClassnames = {
   base: baseClass,
   active: activeClass,
   inactive: inactiveClass,
+};
+export const typeToTabNameMap: Record<string, TabName> = {
+  'image': 'Images',
+  'video': 'Videos',
+  'sonidos': 'Sounds',
+  'obs': 'OBS',
+  'groups': 'Groups',
 };

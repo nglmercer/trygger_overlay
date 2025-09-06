@@ -7,6 +7,7 @@ export type MediaType = 'image' | 'audio' | 'video';
 export type FormTypes = 'image' | 'video' | 'audio';
 
 export interface BaseForm {
+  id?: string;
   name: string;
   type: FormTypes;
   duration: number;
@@ -112,7 +113,23 @@ export class MediaApi extends PrefixedApi {
     return this.get<MediaItem[]>(`/data/${type}`, fetchOptions);
   }
 }
-
+export class TriggerApi extends PrefixedApi {
+  constructor(config = apiConfig) {
+    super(config, '/api/trigger');
+  }
+  async list(fetchOptions: FetchOptions = {}): Promise<TriggerForm[]> {
+    return this.get<TriggerForm[]>('/data', fetchOptions);
+  }
+  async getType(type: FormTypes, fetchOptions: FetchOptions = {}): Promise<TriggerForm[]> {
+    return this.get<TriggerForm[]>(`/data/${type}`, fetchOptions);
+  }
+  async create(form: TriggerForm, fetchOptions: FetchOptions = {}): Promise<TriggerForm> {
+    return this.post<TriggerForm>('/create', form, fetchOptions);
+  }
+  async update(form: TriggerForm, fetchOptions: FetchOptions = {}): Promise<TriggerForm> {
+    return this.put<TriggerForm>(`/${form.id}`, form, fetchOptions);
+  }
+}
 // Exportar todas las instancias y utilidades
 export {
   BaseApi,
@@ -121,4 +138,5 @@ export {
 
 // Exportar una instancia lista para usar
 export const mediaApi = new MediaApi(apiConfig);
+export const triggerApi = new TriggerApi(apiConfig);
 
