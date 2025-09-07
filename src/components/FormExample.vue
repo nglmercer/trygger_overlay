@@ -396,11 +396,11 @@ const setFormByType = (type: FormTypes) => {
 const handleDelete = async () => {
   if (!form.value || typeof form.value.id !== 'string') return;
   console.log("HandleDelete",form.value.id)
-  return
-    await triggerApi.delete(form.value?.id).then((res) => {
+  // add modal to confirm delete
+/*     await triggerApi.delete(form.value?.id).then((res) => {
         console.log("res", res);
         modalRef.value?.hide();
-    })
+    }) */
 }
 // --- EVENT HANDLERS ---
 emitter.on(TriggerEvents.FormType, (type: FormTypes) => {

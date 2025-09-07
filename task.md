@@ -39,9 +39,10 @@ Add create alerts:trigger,widget,tests for alerts
     - Upload Media [x]
     - Handle Media [x]
     - search and Filter Media []
-    - Form trigger []
+    - Form trigger [x]
     - Widget []
     - Tests []
+    - Socket []
 - [ ] Completed
 - [ ] Blocked
 

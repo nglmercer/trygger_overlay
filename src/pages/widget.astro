@@ -1,0 +1,33 @@
+---
+import WidgetLayout from '../layout/WidgetLayout.astro';
+import Tabs from '../components/tabs.astro';
+import Upload from '../components/media/upload.vue';
+import NotificationContainer from '@components/NotificationContainer.vue';
+import MainContent from '@components/MainContent.vue';
+import FormExample from '@components/FormExample.vue';
+import MaterialIcon from '@components/static/MaterialIcon.astro';
+import MediaPlayer from '@components/widget/MediaPlayer.vue';
+const baseBtn = "p-4 flex justify-center align-center"
+const floatBtn = "bg-blue-600 hover:bg-blue-800 rounded-full"
+const linkBtn = "bg-gray-600 hover:bg-gray-800 rounded-full"
+const absoluteRight4 = "absolute right-4"
+---
+
+<WidgetLayout>
+	<MediaPlayer client:only="vue"/>
+</WidgetLayout>
+<style is:inline>
+	body {
+		margin: 0;
+		padding: 0;
+		height: 100dvh;
+		width: 100%;
+		color-scheme: light dark;
+	}
+	@media (prefers-color-scheme: dark) {
+		body {
+			background-color: #00000000;
+			color: #fff;
+		}
+	}
+</style>
