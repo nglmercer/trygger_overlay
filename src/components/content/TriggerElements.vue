@@ -53,13 +53,20 @@ const handleEdit = (element: BaseTriggerInput) => {
   emitter.emit(TriggerEvents.FormType, props.type);
   emitter.emit(TriggerEvents.setForm, element);
 };
-const handleToggle = (element: BaseTriggerInput, enabled: boolean) => {
-  console.log('Toggle clicked!', element, enabled);
+const handleToggle =async (element: BaseTriggerInput, enabled: boolean) => {
+  if (!element.id)return;
+  const changeState = await triggerApi.toggle(element.id)
+  console.log('Toggle clicked!', element, enabled,changeState);
+  Elements()
 };
 const Elements = async ()=>{
   const triggers = await triggerApi.list()
   triggerElements.value = transformTriggersToArray(triggers, props.type)
     .filter(item => item?.item?.type?.includes(props.type))
 }
+emitter.on(TriggerEvents.Submit,()=>Elements())
+emitter.on(TriggerEvents.Add,()=>{
+  handleOpenForm(props.type)
+})
 Elements()
 </script>

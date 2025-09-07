@@ -180,6 +180,14 @@
                     >
                         SAVE
                     </button>
+                    <button 
+                        v-if="form.id"
+                        type="button"
+                        @click="handleDelete"
+                        class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-md font-medium transition-colors duration-200"
+                    >
+                        <MaterialVue size="sm" class="text-white">delete</MaterialVue>
+                    </button>
                 </div>
             </form>
         </div>
@@ -187,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from "vue"
+import { ref, watch, computed, onMounted } from "vue"
 import MaterialVue from '@components/static/MaterialVue.vue';
 import { DlgCont } from '@litcomponents/modal'
 import { emitter } from "@utils/Emitter";
@@ -201,6 +209,7 @@ import { getFullImageUrl } from "@utils/Url";
 type FormTypes = 'image' | 'video' | 'audio';
 
 interface BaseForm {
+    id?: string;
     name: string;
     type: FormTypes;
     duration: number;
@@ -279,7 +288,7 @@ const preservedData = ref({
     maxDuration: false,
     active: true,
     item: {} as Partial<MediaItem>,
-    
+    id: "",
     // Datos específicos por tipo
     size: 50,
     volume: 50,
@@ -289,11 +298,17 @@ const preservedData = ref({
 
 // The main form state, its type will be dynamically handled
 const form = ref<TriggerForm>(defaultImageData);
-
+const modalRef = ref<DlgCont>()
 const formItem = computed(() => {
     return { ...form.value.item, type: formType.value }
 });
-
+onMounted(() => {
+  const TriggerModal = document.querySelector('.Trigger_modal') as DlgCont;
+  modalRef.value = TriggerModal;
+  modalRef.value?.addEventListener('modal:close', () => {
+    handleCancel()
+  })
+})
 // --- NUEVAS FUNCIONES DE PRESERVACIÓN ---
 
 // Función para guardar los datos actuales antes de cambiar de tipo
@@ -303,6 +318,9 @@ const preserveCurrentData = () => {
     preservedData.value.duration = form.value.duration;
     preservedData.value.maxDuration = form.value.maxDuration;
     preservedData.value.active = form.value.active;
+    if (form.value.id) {
+        preservedData.value.id = form.value.id;
+    }
     preservedData.value.item = { ...form.value.item };
     
     // Preservar datos específicos si existen
@@ -326,6 +344,7 @@ const createFormByType = (type: FormTypes): TriggerForm => {
         maxDuration: preservedData.value.maxDuration || false,
         active: preservedData.value.active !== undefined ? preservedData.value.active : true,
         item: preservedData.value.item || {} as Partial<MediaItem>,
+        id: preservedData.value.id || "",
     };
 
     switch (type) {
@@ -367,16 +386,22 @@ const createFormByType = (type: FormTypes): TriggerForm => {
 
 // Function to reset the form state based on the selected type
 const setFormByType = (type: FormTypes) => {
-    const TriggerModal = document.querySelector('.Trigger_modal') as DlgCont;
-    TriggerModal?.show();
+    modalRef.value?.show();
     
-    // CAMBIO PRINCIPAL: Preservar datos actuales antes de cambiar
     preserveCurrentData();
     
     // Crear nuevo formulario con datos preservados
     form.value = createFormByType(type);
 };
-
+const handleDelete = async () => {
+  if (!form.value || typeof form.value.id !== 'string') return;
+  console.log("HandleDelete",form.value.id)
+  return
+    await triggerApi.delete(form.value?.id).then((res) => {
+        console.log("res", res);
+        modalRef.value?.hide();
+    })
+}
 // --- EVENT HANDLERS ---
 emitter.on(TriggerEvents.FormType, (type: FormTypes) => {
     formType.value = type;
@@ -423,7 +448,9 @@ const handleSubmit = () => {
     console.log("Form submitted:", form.value);
     triggerApi.create(applyDefaultValues(form.value)).then((res) => {
         console.log("res", res);
+        modalRef.value?.hide();
     })
+
 }
 
 const handleCancel = () => {
@@ -436,6 +463,7 @@ const handleCancel = () => {
         item: {} as Partial<MediaItem>,
         size: 50,
         volume: 50,
+        id: "",
         position: { x: 0, y: 0 },
         randomPosition: false
     };
@@ -443,6 +471,7 @@ const handleCancel = () => {
     const newFormData = createFormByType(formType.value);
     resetForm()
     console.log("Form cancelled and reset to defaults",newFormData,form.value);
+    modalRef.value?.hide();
 }
 
 // NUEVA: Función para limpiar completamente el formulario
@@ -453,6 +482,7 @@ const resetForm = () => {
         maxDuration: false,
         active: true,
         item: {} as Partial<MediaItem>,
+        id: "",
         size: 50,
         volume: 50,
         position: { x: 0, y: 0 },

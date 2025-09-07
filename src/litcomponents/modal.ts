@@ -307,7 +307,9 @@ export class DlgCont extends LitElement {
   }
 
   private emitClose(): void {
-    this.dispatchEvent(new CustomEvent('close'));
+    const details = { required: this.required };
+    this.dispatchEvent(new CustomEvent('close', { detail: details }));
+    this.dispatchEvent(new CustomEvent('modal:close', { detail: details }));
   }
 
   public show(): void {

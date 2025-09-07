@@ -26,7 +26,14 @@ Add create alerts:trigger,widget,tests for alerts
 ## Notes
 - In progress
 - select media (priority)
-
+- local queue [{data},{data}]:
+    - push
+    - enqueue
+    - add
+- indefinite durations: 
+    - image show image, durations: await next image minimum is duration
+    - video show video, durations: await end video
+    - audio show audio, durations: await end audio
 ## Status
 - [x] In Progress
     - Upload Media [x]

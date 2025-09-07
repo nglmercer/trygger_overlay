@@ -1,4 +1,3 @@
-import type { T } from 'node_modules/tailwindcss/dist/types-WlZgYgM8.d.mts';
 import BaseApi, { PrefixedApi } from './commons/BaseApi';
 import type { FetchOptions } from './commons/httpservice';
 import apiConfig from './config/apiConfig';
@@ -216,8 +215,10 @@ export class MediaApi extends PrefixedApi {
 }
 
 export class TriggerApi extends PrefixedApi {
+  toggleOptions = ['toggle', 'activate', 'deactivate'];
   constructor(config = apiConfig) {
     super(config, '/api/trigger');
+    this.toggleOptions = ['toggle', 'activate', 'deactivate'];
   }
 
   async list(fetchOptions: FetchOptions = {}): Promise<TriggerForm[]> {
@@ -237,6 +238,15 @@ export class TriggerApi extends PrefixedApi {
   // Método de actualización que también acepta TriggerInput
   async update(input: TriggerInput & { id: string }, fetchOptions: FetchOptions = {}): Promise<TriggerForm> {
     return this.put<TriggerForm>(`/${input.id}`, input, fetchOptions);
+  }
+  async toggle(id: string, fetchOptions: FetchOptions = {}): Promise<TriggerForm> {
+    return this.post<TriggerForm>(`/toggle/${id}`, {}, fetchOptions);
+  }
+  async activate(id: string, fetchOptions: FetchOptions = {}): Promise<TriggerForm> {
+    return this.post<TriggerForm>(`/toggle/${id}/${this.toggleOptions[1]}`, {}, fetchOptions);
+  }
+  async deactivate(id: string, fetchOptions: FetchOptions = {}): Promise<TriggerForm> {
+    return this.post<TriggerForm>(`/toggle/${id}/${this.toggleOptions[2]}`, {}, fetchOptions);
   }
 }
 

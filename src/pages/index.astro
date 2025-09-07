@@ -5,6 +5,11 @@ import Upload from '../components/media/upload.vue';
 import NotificationContainer from '@components/NotificationContainer.vue';
 import MainContent from '@components/MainContent.vue';
 import FormExample from '@components/FormExample.vue';
+import MaterialIcon from '@components/static/MaterialIcon.astro';
+const baseBtn = "p-4 flex justify-center align-center"
+const floatBtn = "bg-blue-600 hover:bg-blue-800 rounded-full"
+const linkBtn = "bg-gray-600 hover:bg-gray-800 rounded-full"
+const absoluteRight4 = "absolute right-4"
 ---
 
 <Layout>
@@ -16,13 +21,26 @@ import FormExample from '@components/FormExample.vue';
 	<dlg-cont class="upload_modal">
 		<Upload client:only="vue" />
 	</dlg-cont>
-	<button type="button" class="btn btn-primary" id="NewTrigger">Open Modal</button>
+	<button type="button" id="AddTrigger" class={`${baseBtn} ${floatBtn} ${absoluteRight4} bottom-20`}>
+		<MaterialIcon icon="add" />
+	</button>
+	<button type="button" id="LinkTrigger" class={`${baseBtn} ${linkBtn} ${absoluteRight4} bottom-4 `}>
+		<MaterialIcon icon="add_link" />
+	</button>
 </Layout>
 <script>
 	import { DlgCont } from '@litcomponents/modal'
-	const button = document.querySelector('#NewTrigger') as HTMLButtonElement;
-	button.addEventListener('click', () => {
-		const modal = document.querySelector('.upload_modal') as DlgCont;
-		modal.show();
+	import { emitter } from '@utils/Emitter';
+	import { TriggerEvents } from 'src/config/events';
+	document.addEventListener('DOMContentLoaded', () => {
+		const addTrigger = document.querySelector('#AddTrigger') as HTMLButtonElement;
+		const linkTrigger = document.querySelector('#LinkTrigger') as HTMLButtonElement;
+		if (!addTrigger || !linkTrigger) return;
+		addTrigger.addEventListener('click', () => {
+			emitter.emit(TriggerEvents.Add,{});
+		})
+		linkTrigger.addEventListener('click', () => {
+			//not implemented
+		})
 	})
 </script>
