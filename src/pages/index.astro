@@ -21,6 +21,23 @@ const absoluteRight4 = "absolute right-4"
 	<dlg-cont class="upload_modal">
 		<Upload client:only="vue" />
 	</dlg-cont>
+	<dlg-cont class="link_modal" style="position:absolute">
+		<div class="p-6 flex flex-col gap-4 bg-gray-800 rounded-md shadow-md">
+			<div class="flex items-center gap-2">
+				<input type="text" id="linkInput" class="flex-1 p-2 rounded-md border-0" placeholder="Enter link URL" disabled>
+				<button type="button" id="copyBtn" class="btn btn-primary">
+					Copy
+				</button>
+			</div>
+			<div class="flex justify-between">
+				<select name="TriggerOptions" id="TriggerOptions">
+				</select>
+				<button type="button" id="testBtn" class="btn btn-primary">
+					<MaterialIcon icon="send" />
+				</button>
+			</div>
+		</div>
+	</dlg-cont>
 	<button type="button" id="AddTrigger" class={`${baseBtn} ${floatBtn} ${absoluteRight4} bottom-20`}>
 		<MaterialIcon icon="add" />
 	</button>
@@ -31,16 +48,53 @@ const absoluteRight4 = "absolute right-4"
 <script>
 	import { DlgCont } from '@litcomponents/modal'
 	import { emitter } from '@utils/Emitter';
+	import broadcastChannel from '@utils/brodcast';
 	import { TriggerEvents } from 'src/config/events';
+	import WebSocketClient,{handlers} from '@utils/ws';
+
+	const wsClient = new WebSocketClient('ws://localhost:3000/ws',handlers);
 	document.addEventListener('DOMContentLoaded', () => {
 		const addTrigger = document.querySelector('#AddTrigger') as HTMLButtonElement;
 		const linkTrigger = document.querySelector('#LinkTrigger') as HTMLButtonElement;
+		const triggerOptions = document.querySelector('#TriggerOptions') as HTMLSelectElement;
 		if (!addTrigger || !linkTrigger) return;
 		addTrigger.addEventListener('click', () => {
 			emitter.emit(TriggerEvents.Add,{});
 		})
+		const linkInput = document.querySelector('#linkInput') as HTMLInputElement;
+		const LinkUrl = window.location.href + 'widget';
+		linkInput.value = LinkUrl;
+		const copyBtn = document.querySelector('#copyBtn') as HTMLButtonElement;
+		copyBtn.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(linkInput.value);
+			} catch (err) {
+				// Fallback for older browsers
+				linkInput.select();
+				linkInput.setSelectionRange(0, 99999);
+				document.execCommand('copy');
+			}
+		})
 		linkTrigger.addEventListener('click', () => {
 			//not implemented
+			const linkModal = document.querySelector('.link_modal') as DlgCont;
+			linkModal.show();
+		})
+		const testBtn = document.querySelector('#testBtn') as HTMLButtonElement;
+		testBtn.addEventListener('click', () => {
+			emitter.emit(TriggerEvents.Test,{
+				triggerId: triggerOptions?.value,
+			});
+			wsClient.send(JSON.stringify({
+				event: 'TriggerEvents:ID',
+				data: triggerOptions?.value,
+			}))
+/* 			broadcastChannel.postMessage({
+				event: TriggerEvents.Test,
+				data: {
+					triggerId: triggerOptions?.value,
+				}
+			}); */
 		})
 	})
 </script>

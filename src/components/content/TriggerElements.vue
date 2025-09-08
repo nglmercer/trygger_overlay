@@ -60,9 +60,21 @@ const handleToggle =async (element: BaseTriggerInput, enabled: boolean) => {
   Elements()
 };
 const Elements = async ()=>{
-  const triggers = await triggerApi.list()
+  const triggers = await triggerApi.list();
   triggerElements.value = transformTriggersToArray(triggers, props.type)
-    .filter(item => item?.item?.type?.includes(props.type))
+    .filter(item => item?.item?.type?.includes(props.type));
+  setOptions(transformTriggersToArray(triggers));
+}
+const setOptions = (options: BaseTriggerInput[])=>{
+  if (!options) return;
+  const selectOptions = document.getElementById('TriggerOptions') as HTMLSelectElement;
+  selectOptions.innerHTML = '';
+  options.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.id || '';
+    option.textContent = item.name;
+    selectOptions.appendChild(option);
+  });
 }
 emitter.on(TriggerEvents.Submit,()=>Elements())
 emitter.on(TriggerEvents.Add,()=>{

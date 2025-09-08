@@ -4,6 +4,7 @@ const TriggerEvents = {
   FormType: 'TriggerForm:formType',
   setForm: 'TriggerForm:setForm',
   Add: 'TriggerForm:add',
+  Test: 'TriggerForm:test',
 }
 const MediaEvents = {
   selectedMedia: 'MediaGallery:selectedMedia',

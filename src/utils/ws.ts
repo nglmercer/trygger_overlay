@@ -1,91 +1,142 @@
-type EventCallback = (...args: any[]) => void;
+/**
+ * Defines the callback functions for core WebSocket events.
+ */
+export interface WSHandlers {
+  onOpen: (event: Event) => void;
+  onMessage: (event: MessageEvent) => void;
+  onError: (event: Event) => void;
+  onClose: (event: CloseEvent) => void;
+}
 
-class WebSocketClient {
+/**
+ * A minimalist, type-safe WebSocket client wrapper.
+ *
+ * This class provides a thin layer over the native WebSocket API,
+ * focusing on simplicity and ease of use without automatic reconnection
+ * or message queuing.
+ */
+export class WsClient {
   private ws: WebSocket | null = null;
-  private events: Map<string, EventCallback[]> = new Map();
+  private readonly url: string;
+  private readonly protocols?: string | string[];
 
-  constructor(url: string) {
-    this.connect(url);
-  }
-
-  private url: string = '';
-  private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 10;
-  private reconnectTimeout: number = 1000;
-  private reconnectTimer: NodeJS.Timeout | null = null;
-
-  private connect(url: string) {
+  /**
+   * Creates an instance of WsClient and initiates the connection.
+   * @param url The URL to connect to.
+   * @param handlers An optional object with callbacks for `onOpen`, `onMessage`, `onError`, and `onClose`.
+   * @param protocols An optional string or array of strings for sub-protocols.
+   */
+  constructor(
+    url: string,
+    handlers: Partial<WSHandlers> = {},
+    protocols?: string | string[]
+  ) {
     this.url = url;
-    this.establishConnection();
+    this.protocols = protocols;
+    this.connect(handlers);
   }
 
-  private establishConnection() {
-    this.ws = new WebSocket(this.url);
+  /**
+   * Initiates the WebSocket connection and attaches event listeners.
+   */
+  private connect(handlers: Partial<WSHandlers>): void {
+    try {
+      this.ws = new WebSocket(this.url, this.protocols);
 
-    this.ws.onmessage = (event) => {
-      try {
-        const { type, data } = JSON.parse(event.data);
-        this.emit(type, data);
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
-      }
-    }
-
-    this.ws.onclose = () => {
-      console.log('WebSocket connection closed');
-      this.attemptReconnect();
-    }
-
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    }
-
-    this.ws.onopen = () => {
-      console.log('WebSocket connected successfully');
-      this.reconnectAttempts = 0;
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
+      this.ws.onopen = handlers.onOpen ?? null;
+      this.ws.onmessage = handlers.onMessage ?? null;
+      this.ws.onerror = handlers.onError ?? null;
+      this.ws.onclose = handlers.onClose ?? null;
+    } catch (error) {
+      console.error("[WsClient] Failed to create WebSocket:", error);
+      // If a custom error handler is provided, call it for connection errors too.
+      if (handlers.onError) {
+        handlers.onError(error as Event);
       }
     }
   }
 
-  private attemptReconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-      
-      this.reconnectTimer = setTimeout(() => {
-        this.establishConnection();
-      }, this.reconnectTimeout * Math.pow(2, this.reconnectAttempts - 1));
-    } else {
-      console.error('Max reconnection attempts reached');
+  /**
+   * Returns the current readyState of the WebSocket connection.
+   * Follows the standard WebSocket readyState codes:
+   * 0 (CONNECTING), 1 (OPEN), 2 (CLOSING), 3 (CLOSED).
+   */
+  public get readyState(): number {
+    return this.ws?.readyState ?? WebSocket.CLOSED;
+  }
+
+  /**
+   * Checks if the WebSocket connection is currently open.
+   */
+  public isConnected(): boolean {
+    return this.readyState === WebSocket.OPEN;
+  }
+
+  /**
+   * Sends data through the WebSocket connection.
+   * Will only send if the connection is currently OPEN.
+   * @param data The data to send.
+   * @returns `true` if the data was sent, `false` otherwise.
+   */
+  public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): boolean {
+    if (this.isConnected()) {
+      this.ws!.send(data);
+      return true;
+    }
+    console.warn("[WsClient] Cannot send data: WebSocket is not open.");
+    return false;
+  }
+
+  /**
+   * A convenience method to send a JavaScript object as a JSON string.
+   * @param data The object to stringify and send.
+   * @returns `true` if the data was sent, `false` otherwise.
+   */
+  public sendJSON(data: object): boolean {
+    try {
+      return this.send(JSON.stringify(data));
+    } catch (error) {
+      console.error("[WsClient] Failed to stringify JSON for sending:", error);
+      return false;
     }
   }
 
-  public on(eventName: string, callback: EventCallback) {
-    if (!this.events.has(eventName)) {
-      this.events.set(eventName, []);
+  /**
+   * Closes the WebSocket connection.
+   * @param code A numeric value indicating the status code.
+   * @param reason A human-readable string explaining why the connection is closing.
+   */
+  public close(code?: number, reason?: string): void {
+    if (this.ws) {
+      this.ws.close(code, reason);
     }
-    this.events.get(eventName)?.push(callback);
-  }
-
-  public emit(eventName: string, data: any) {
-    const callbacks = this.events.get(eventName);
-    if (callbacks) {
-      callbacks.forEach(callback => callback(data));
-    }
-  }
-
-  public send(type: string, data: any) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type, data }));
-    }
-  }
-
-  public close() {
-    this.ws?.close();
   }
 }
 
-export default WebSocketClient;
+// --- USAGE EXAMPLE ---
+
+export const handlers: Partial<WSHandlers> = {
+  onOpen: () => {
+    console.log("WebSocket connection opened!");
+    // Now it's safe to send messages
+    //client.sendJSON({ type: "greeting", payload: "Hello from client!" });
+  },
+
+  onMessage: (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      console.log("Received message:", message);
+    } catch (e) {
+      console.log("Received raw data:", event.data);
+    }
+  },
+
+  onClose: (event) => {
+    console.log(`WebSocket connection closed: ${event.code} - ${event.reason}`);
+  },
+
+  onError: (error) => {
+    console.error("WebSocket error:", error);
+  },
+};
+export default WsClient;

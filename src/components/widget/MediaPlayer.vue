@@ -56,7 +56,11 @@ import MediaStats from '../widget/MediaStats.vue';
 import DevModeToggle from '../widget/DevModeToggle.vue';
 import { initializePositionPool, getRandomPosition, updatePositionPool, type Position } from './positionUtils';
 import { triggerApi,transformTriggersToArray,type TriggerItem } from '@utils/fetch/fetchapi';
-import WebSocketClient from '@utils/ws';
+import WebSocketClient,{ handlers} from '@utils/ws';
+import { TriggerEvents } from 'src/config/events';
+import { emitter } from '@utils/Emitter';
+import broadcastChannel from '@utils/brodcast';
+
 // Props and Emits
 const emit = defineEmits<{
   itemStarted: [item: TriggerItem];
@@ -79,14 +83,18 @@ const isInitialized = ref(false);
 const savedStoreTriggers = ref<TriggerItem[]>([]);
 const playedItems = ref<Set<string>>(new Set()); // Track de items reproducidos
 let durationTimer: NodeJS.Timeout | null = null;
-const ws = new WebSocketClient('ws://localhost:3000/ws');
-ws.on('message', (data) => {
-  console.log('Received message:', data);
-});
+handlers.onMessage = (rawData) => {
+  const {data,event} = typeof rawData.data === 'string' ? JSON.parse(rawData.data) : rawData.data;
+  console.log('Received message:', data,event);
+  if (event === TriggerEvents.Test || event === 'TriggerEvents:ID') {
+    TriggerProcces(data)
+  }
+}
+const ws = new WebSocketClient('ws://localhost:3000/ws',handlers);
 
 // Sample data
 const sampleQueue: TriggerItem[] = [
-  {
+/*   {
     name: "Sample Video",
     duration: 10,
     maxDuration: false,
@@ -107,7 +115,7 @@ const sampleQueue: TriggerItem[] = [
     position: { x: 0, y: 0 },
     randomPosition: true,
     id: "e12964c2-3d4d-431d-b077-bb51a6ed1e15"
-  },
+  }, 
   {
     name: "Sample Image",
     duration: 5,
@@ -117,7 +125,7 @@ const sampleQueue: TriggerItem[] = [
       id: "326bd326-3142-4066-8842-d750b9001a28",
       name: "128845117.png",
       type: "image",
-      url: "/uploads/images/326bd326-3142-4066-8842-d750b9001a28.png",
+      url: "https://picsum.photos/800/600",
       metadata: {
         "size": 270566,
         "type": "image/png"
@@ -130,6 +138,7 @@ const sampleQueue: TriggerItem[] = [
     randomPosition: true,
     id: "img-widget-001"
   }
+  */
 ];
 
 // Computed
@@ -171,25 +180,18 @@ const initializePositions = async () => {
 
 // Queue Management Methods
 const push = (item: TriggerItem) => {
-  // Verificar si el item ya existe en la cola
-  const exists = queue.value.some(existingItem => existingItem.id === item.id);
-  
-  if (!exists) {
-    // Assign random position if needed and system is initialized
-    if (isInitialized.value) {
-      assignRandomPosition(item);
-    }
-    
-    queue.value.push(item);
-    emit('queueUpdated', [...queue.value]);
-    
-    // Auto-start playback if this is the first item and nothing is playing
-    if (queue.value.length === 1 && currentIndex.value === -1) {
-      startPlayback();
-    }
-  } else {
-    console.log(`Item ${item.name} already exists in queue`);
+  if (isInitialized.value) {
+    assignRandomPosition(item);
   }
+  
+  queue.value.push(item);
+  emit('queueUpdated', [...queue.value]);
+  
+  // Auto-start playback if this is the first item and nothing is playing
+  if (queue.value.length === 1 && currentIndex.value === -1) {
+    startPlayback();
+  }
+
 };
 
 const enqueue = (item: TriggerItem) => push(item);
@@ -349,27 +351,21 @@ const removePlayedItems = () => {
   }
 };
 const addNewTrigger = (trigger: TriggerItem) => {
-  // Verificar si el trigger ya está en la cola (evitar duplicados)
-  const exists = queue.value.some(item => item.id === trigger.id);
-  
-  if (!exists) {
-    // Assign random position if needed and system is initialized
-    if (isInitialized.value) {
-      assignRandomPosition(trigger);
-    }
-    
-    queue.value.push(trigger);
-    emit('queueUpdated', [...queue.value]);
-    
-    console.log(`New trigger added: ${trigger.name}. Queue length: ${queue.value.length}`);
-    
-    // Auto-start playback si no hay nada reproduciéndose
-    if (!isPlaying.value && currentIndex.value === -1) {
-      startPlayback();
-    }
-  } else {
-    console.log(`Trigger ${trigger.name} already exists in queue`);
+  // Assign random position if needed and system is initialized
+  if (isInitialized.value) {
+    assignRandomPosition(trigger);
   }
+  
+  queue.value.push(trigger);
+  emit('queueUpdated', [...queue.value]);
+  
+  console.log(`New trigger added: ${trigger.name}. Queue length: ${queue.value.length}`);
+  
+  // Auto-start playback si no hay nada reproduciéndose
+  if (!isPlaying.value && currentIndex.value === -1) {
+    startPlayback();
+  }
+
 };
 // Navigation helpers
 const hasNextItem = (): boolean => {
@@ -538,18 +534,25 @@ async function updateTriggers() {
   savedStoreTriggers.value = transformTriggersToArray(listTrigger);
   console.log('listTrigger', savedStoreTriggers.value);
   
-  // test trigger
-  const trigger = getTriggerById('c8652b87-96d2-4d06-9d46-d0fa945e9c87');
-  const trigger2 = getTriggerById('e12964c2-3d4d-431d-b077-bb51a6ed1e15')
-  if (trigger && trigger2) {
-    setTimeout(() => {
-      // En lugar de clearQueue(), usar addNewTrigger
-      addNewTrigger(trigger);
-      addNewTrigger(trigger2)
-    }, 30000);
-  }
-  
   return savedStoreTriggers.value;
+}
+emitter.on(TriggerEvents.Test,({triggerId})=>{
+  TriggerProcces(triggerId);
+})
+broadcastChannel.onmessage = ({data})=>{
+  if (data.event === TriggerEvents.Test) {
+    TriggerProcces(data.data.triggerId);
+  }
+}
+function TriggerProcces(id: string){
+    if (!id) {
+      console.warn('Invalid trigger ID',id);
+      return;
+    }
+      const trigger = getTriggerById(id);
+    if (trigger) {
+      addNewTrigger(trigger);
+    }
 }
 function getTriggerById(id: string){
   return savedStoreTriggers.value.find((trigger) => trigger.id === id)
