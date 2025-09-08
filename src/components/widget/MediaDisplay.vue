@@ -44,35 +44,11 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import type{ TriggerItem } from '@utils/fetch/fetchapi';
 
-interface MediaItem {
-  name: string;
-  duration: number;
-  maxDuration: boolean;
-  active: boolean;
-  item: {
-    id: string;
-    name: string;
-    type: 'video' | 'image' | 'audio';
-    url: string;
-    metadata: {
-      size: number;
-      type: string;
-    }
-  };
-  type: 'video' | 'image' | 'audio';
-  size: number;
-  volume: number;
-  position: {
-    x: number;
-    y: number;
-  };
-  randomPosition: boolean;
-  id: string;
-}
 
 const props = defineProps<{
-  currentItem: MediaItem | null;
+  currentItem: TriggerItem | null;
   urlBase: string;
 }>();
 
@@ -117,7 +93,7 @@ const getSizeCategory = (size: number): keyof typeof MEDIA_SIZES => {
 };
 
 // Calculate responsive dimensions
-const getResponsiveDimensions = (item: MediaItem) => {
+const getResponsiveDimensions = (item: TriggerItem) => {
   const sizeCategory = getSizeCategory(item.size);
   const baseDimensions = MEDIA_SIZES[sizeCategory];
   
@@ -138,7 +114,7 @@ const getResponsiveDimensions = (item: MediaItem) => {
 };
 
 // Enhanced media styling with consistent aspect ratios
-const getMediaStyle = (item: MediaItem) => {
+const getMediaStyle = (item: TriggerItem) => {
   const dimensions = getResponsiveDimensions(item);
   
   return {
@@ -155,7 +131,7 @@ const getMediaStyle = (item: MediaItem) => {
 };
 
 // Audio element styling
-const getAudioStyle = (item: MediaItem) => {
+const getAudioStyle = (item: TriggerItem) => {
   return {
     left: `${item.position.x}%`,
     top: `${item.position.y}%`,

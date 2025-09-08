@@ -55,39 +55,14 @@ import MediaControls from '../widget/MediaControls.vue';
 import MediaStats from '../widget/MediaStats.vue';
 import DevModeToggle from '../widget/DevModeToggle.vue';
 import { initializePositionPool, getRandomPosition, updatePositionPool, type Position } from './positionUtils';
-
-interface MediaItem {
-  name: string;
-  duration: number;
-  maxDuration: boolean;
-  active: boolean;
-  item: {
-    id: string;
-    name: string;
-    type: 'video' | 'image' | 'audio';
-    url: string;
-    metadata: {
-      size: number;
-      type: string;
-    }
-  };
-  type: 'video' | 'image' | 'audio';
-  size: number;
-  volume: number;
-  position: {
-    x: number;
-    y: number;
-  };
-  randomPosition: boolean;
-  id: string;
-}
-
+import { triggerApi,transformTriggersToArray,type TriggerItem } from '@utils/fetch/fetchapi';
+import WebSocketClient from '@utils/ws';
 // Props and Emits
 const emit = defineEmits<{
-  itemStarted: [item: MediaItem];
-  itemEnded: [item: MediaItem];
+  itemStarted: [item: TriggerItem];
+  itemEnded: [item: TriggerItem];
   queueEmpty: [];
-  queueUpdated: [queue: MediaItem[]];
+  queueUpdated: [queue: TriggerItem[]];
 }>();
 
 // Refs
@@ -95,16 +70,22 @@ const containerRef = ref<HTMLElement | null>(null);
 
 // State
 const urlBase = "http://localhost:3000";
-const queue = ref<MediaItem[]>([]);
+const queue = ref<TriggerItem[]>([]);
 const currentIndex = ref(-1); // Start with -1 to indicate no item is playing
 const isPlaying = ref(false);
 const timeRemaining = ref(0);
 const isDevelopmentMode = ref(false);
 const isInitialized = ref(false);
+const savedStoreTriggers = ref<TriggerItem[]>([]);
+const playedItems = ref<Set<string>>(new Set()); // Track de items reproducidos
 let durationTimer: NodeJS.Timeout | null = null;
+const ws = new WebSocketClient('ws://localhost:3000/ws');
+ws.on('message', (data) => {
+  console.log('Received message:', data);
+});
 
 // Sample data
-const sampleQueue: MediaItem[] = [
+const sampleQueue: TriggerItem[] = [
   {
     name: "Sample Video",
     duration: 10,
@@ -159,7 +140,7 @@ const currentItem = computed(() =>
 );
 
 // Position management
-const assignRandomPosition = (item: MediaItem) => {
+const assignRandomPosition = (item: TriggerItem) => {
   if (item.randomPosition && containerRef.value) {
     const containerRect = containerRef.value.getBoundingClientRect();
     const newPosition = getRandomPosition();
@@ -189,23 +170,30 @@ const initializePositions = async () => {
 };
 
 // Queue Management Methods
-const push = (item: MediaItem) => {
-  // Assign random position if needed and system is initialized
-  if (isInitialized.value) {
-    assignRandomPosition(item);
-  }
+const push = (item: TriggerItem) => {
+  // Verificar si el item ya existe en la cola
+  const exists = queue.value.some(existingItem => existingItem.id === item.id);
   
-  queue.value.push(item);
-  emit('queueUpdated', [...queue.value]);
-  
-  // Auto-start playback if this is the first item and nothing is playing
-  if (queue.value.length === 1 && currentIndex.value === -1) {
-    startPlayback();
+  if (!exists) {
+    // Assign random position if needed and system is initialized
+    if (isInitialized.value) {
+      assignRandomPosition(item);
+    }
+    
+    queue.value.push(item);
+    emit('queueUpdated', [...queue.value]);
+    
+    // Auto-start playback if this is the first item and nothing is playing
+    if (queue.value.length === 1 && currentIndex.value === -1) {
+      startPlayback();
+    }
+  } else {
+    console.log(`Item ${item.name} already exists in queue`);
   }
 };
 
-const enqueue = (item: MediaItem) => push(item);
-const add = (item: MediaItem) => push(item);
+const enqueue = (item: TriggerItem) => push(item);
+const add = (item: TriggerItem) => push(item);
 
 const dequeue = () => {
   if (queue.value.length === 0) return null;
@@ -278,7 +266,7 @@ const playCurrentItem = () => {
   emit('itemStarted', item);
   
   // Start duration timer for non-maxDuration items
-  if (!item.maxDuration) {
+  if ((!item.maxDuration || item.type === 'image') && item.duration) {
     startDurationTimer(item.duration * 1000);
   }
 };
@@ -316,9 +304,12 @@ const startDurationTimer = (duration: number) => {
 const onItemEnded = () => {
   console.log('Item ended');
   
-  if (currentItem.value) {
+  if (currentItem.value && currentItem.value.id) {
     emit('itemEnded', currentItem.value);
     currentItem.value.active = false;
+    
+    // Marcar como reproducido
+    playedItems.value.add(currentItem.value.id);
   }
   
   stopCurrentItem();
@@ -327,12 +318,59 @@ const onItemEnded = () => {
   if (hasNextItem()) {
     nextItem();
   } else {
-    // End of queue
-    currentIndex.value = -1;
-    emit('queueEmpty');
+    // End of queue - limpiar solo los reproducidos
+    removePlayedItems();
+    
+    if (queue.value.length === 0) {
+      currentIndex.value = -1;
+      emit('queueEmpty');
+    } else {
+      // Si quedan items no reproducidos, reiniciar desde el principio
+      currentIndex.value = 0;
+      startPlayback();
+    }
   }
 };
-
+const removePlayedItems = () => {
+  const originalLength = queue.value.length;
+  
+  // Filtrar items que NO han sido reproducidos
+  queue.value = queue.value.filter(item => item && item.id && !playedItems.value.has(item.id));
+  
+  // Limpiar el set de reproducidos
+  playedItems.value.clear();
+  
+  // Resetear el índice si se removieron items
+  if (queue.value.length !== originalLength) {
+    currentIndex.value = queue.value.length > 0 ? 0 : -1;
+    emit('queueUpdated', [...queue.value]);
+    
+    console.log(`Removed played items. Queue length: ${originalLength} -> ${queue.value.length}`);
+  }
+};
+const addNewTrigger = (trigger: TriggerItem) => {
+  // Verificar si el trigger ya está en la cola (evitar duplicados)
+  const exists = queue.value.some(item => item.id === trigger.id);
+  
+  if (!exists) {
+    // Assign random position if needed and system is initialized
+    if (isInitialized.value) {
+      assignRandomPosition(trigger);
+    }
+    
+    queue.value.push(trigger);
+    emit('queueUpdated', [...queue.value]);
+    
+    console.log(`New trigger added: ${trigger.name}. Queue length: ${queue.value.length}`);
+    
+    // Auto-start playback si no hay nada reproduciéndose
+    if (!isPlaying.value && currentIndex.value === -1) {
+      startPlayback();
+    }
+  } else {
+    console.log(`Trigger ${trigger.name} already exists in queue`);
+  }
+};
 // Navigation helpers
 const hasNextItem = (): boolean => {
   return currentIndex.value < queue.value.length - 1;
@@ -490,11 +528,32 @@ onMounted(async () => {
   if (queue.value.length > 0) {
     startPlayback();
   }
+  updateTriggers()
   
   // Listen for window resize
   window.addEventListener('resize', handleResize);
 });
-
+async function updateTriggers() {
+  const listTrigger = await triggerApi.list();
+  savedStoreTriggers.value = transformTriggersToArray(listTrigger);
+  console.log('listTrigger', savedStoreTriggers.value);
+  
+  // test trigger
+  const trigger = getTriggerById('c8652b87-96d2-4d06-9d46-d0fa945e9c87');
+  const trigger2 = getTriggerById('e12964c2-3d4d-431d-b077-bb51a6ed1e15')
+  if (trigger && trigger2) {
+    setTimeout(() => {
+      // En lugar de clearQueue(), usar addNewTrigger
+      addNewTrigger(trigger);
+      addNewTrigger(trigger2)
+    }, 30000);
+  }
+  
+  return savedStoreTriggers.value;
+}
+function getTriggerById(id: string){
+  return savedStoreTriggers.value.find((trigger) => trigger.id === id)
+}
 onUnmounted(() => {
   console.log('MediaPlayer unmounted');
   stopCurrentItem();

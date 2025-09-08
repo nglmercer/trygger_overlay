@@ -47,7 +47,22 @@ interface AudioForm extends BaseForm {
 
 // Union type para formularios completos (respuestas del API)
 export type TriggerForm = ImageForm | VideoForm | AudioForm;
-
+export interface TriggerItem {
+  name: string;
+  duration: number;
+  maxDuration: boolean;
+  active: boolean;
+  item: Partial<MediaItem>;
+  type: FormTypes;
+  size: number;
+  volume: number;
+  position: {
+    x: number;
+    y: number;
+  };
+  randomPosition: boolean;
+  id?: string;
+}
 // Tipos flexibles para creación - propiedades opcionales según el tipo
 export interface BaseTriggerInput {
   id?: string;
@@ -119,13 +134,13 @@ export const TriggerFormUtils = {
   isVideoInput,
   isAudioInput,
 };
-export const transformTriggersToArray = <T extends TriggerInput>(triggerObject: Record<string, any>, type: MediaType|string): T[] => {
+export const transformTriggersToArray = <T extends TriggerInput>(triggerObject: Record<string, any>, type?: MediaType|string): T[] => {
 if (!triggerObject || typeof triggerObject !== 'object') return [];
     // Demo data generator
     return Object.keys(triggerObject).map((key, index) => ({
         id: key,
         name: `${type}_demo_${index + 1}`,
-        type: type, // Asigna el tipo actual
+        type: type || triggerObject[key].item?.type || triggerObject[key].type, // Asigna el tipo actual
         ...triggerObject[key],
     }));
 };
