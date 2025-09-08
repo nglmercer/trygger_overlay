@@ -6,6 +6,8 @@ import NotificationContainer from '@components/NotificationContainer.vue';
 import MainContent from '@components/MainContent.vue';
 import FormExample from '@components/FormExample.vue';
 import MaterialIcon from '@components/static/MaterialIcon.astro';
+import ConfigApi from '@components/ConfigApi.vue';
+
 const baseBtn = "p-4 flex justify-center align-center"
 const floatBtn = "bg-blue-600 hover:bg-blue-800 rounded-full"
 const linkBtn = "bg-gray-600 hover:bg-gray-800 rounded-full"
@@ -17,6 +19,7 @@ const absoluteRight4 = "absolute right-4"
 	<MainContent client:only="vue"/>
 	<FormExample client:only="vue"/>
 	<NotificationContainer client:only="vue"/>
+	<ConfigApi client:only="vue"/>
 
 	<dlg-cont class="upload_modal">
 		<Upload client:only="vue" />
@@ -38,6 +41,9 @@ const absoluteRight4 = "absolute right-4"
 			</div>
 		</div>
 	</dlg-cont>
+	<button type="button" id="ConfigTrigger" class={`${baseBtn} ${linkBtn} ${absoluteRight4} bottom-36`}>
+		<MaterialIcon icon="settings" />
+	</button>
 	<button type="button" id="AddTrigger" class={`${baseBtn} ${floatBtn} ${absoluteRight4} bottom-20`}>
 		<MaterialIcon icon="add" />
 	</button>
@@ -49,10 +55,10 @@ const absoluteRight4 = "absolute right-4"
 	import { DlgCont } from '@litcomponents/modal'
 	import { emitter } from '@utils/Emitter';
 	import broadcastChannel from '@utils/brodcast';
-	import { TriggerEvents } from 'src/config/events';
+	import { TriggerEvents, Notifications } from 'src/config/events';
 	import WebSocketClient,{handlers} from '@utils/ws';
-
-	const wsClient = new WebSocketClient('ws://localhost:3000/ws',handlers);
+	import { apiConfig } from '@utils/fetch/config/apiConfig';
+	const wsClient = new WebSocketClient(apiConfig.getWsUrl(),handlers);
 	document.addEventListener('DOMContentLoaded', () => {
 		const addTrigger = document.querySelector('#AddTrigger') as HTMLButtonElement;
 		const linkTrigger = document.querySelector('#LinkTrigger') as HTMLButtonElement;
@@ -68,6 +74,10 @@ const absoluteRight4 = "absolute right-4"
 		copyBtn.addEventListener('click', async () => {
 			try {
 				await navigator.clipboard.writeText(linkInput.value);
+				emitter.emit(Notifications.addNotification,{
+					message: 'Link copied to clipboard',
+					type: 'success',
+				})
 			} catch (err) {
 				// Fallback for older browsers
 				linkInput.select();
@@ -81,7 +91,8 @@ const absoluteRight4 = "absolute right-4"
 			linkModal.show();
 		})
 		const testBtn = document.querySelector('#testBtn') as HTMLButtonElement;
-		testBtn.addEventListener('click', () => {
+
+		testBtn?.addEventListener('click', () => {
 			emitter.emit(TriggerEvents.Test,{
 				triggerId: triggerOptions?.value,
 			});

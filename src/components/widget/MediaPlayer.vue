@@ -60,7 +60,8 @@ import WebSocketClient,{ handlers} from '@utils/ws';
 import { TriggerEvents } from 'src/config/events';
 import { emitter } from '@utils/Emitter';
 import broadcastChannel from '@utils/brodcast';
-
+import { apiConfig } from '@utils/fetch/config/apiConfig';
+import { urlConfigHandler, applyURLConfig } from '@utils/fetch/config/urlConfigHandler';
 // Props and Emits
 const emit = defineEmits<{
   itemStarted: [item: TriggerItem];
@@ -73,7 +74,7 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null);
 
 // State
-const urlBase = "http://localhost:3000";
+const urlBase = apiConfig.getFullUrl();
 const queue = ref<TriggerItem[]>([]);
 const currentIndex = ref(-1); // Start with -1 to indicate no item is playing
 const isPlaying = ref(false);
@@ -90,7 +91,21 @@ handlers.onMessage = (rawData) => {
     TriggerProcces(data)
   }
 }
-const ws = new WebSocketClient('ws://localhost:3000/ws',handlers);
+const urlFromParams = new URLSearchParams(window.location.search);
+console.log("urlFromParams.get('ws')", urlFromParams.get('ws'));
+
+if (urlFromParams.get('ws')) {
+  // Instead of manual parsing, use the handler
+  const wsValue = urlFromParams.get('ws');
+  console.log('Processing WebSocket URL:', wsValue);
+  
+  // Option 1: Use the handler (recommended)
+  const changed = urlConfigHandler.applyFromURL();
+  if (changed) {
+    console.log('WebSocket configuration applied:', apiConfig.getFullUrl());
+  }
+}
+const ws = new WebSocketClient(apiConfig.getWsUrl(),handlers);
 
 // Sample data
 const sampleQueue: TriggerItem[] = [

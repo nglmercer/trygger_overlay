@@ -10,4 +10,7 @@ const MediaEvents = {
   selectedMedia: 'MediaGallery:selectedMedia',
   Upload: 'MediaGallery:upload',
 }
-export {TriggerEvents,MediaEvents}
+const Notifications = {
+  addNotification: 'show-notification'
+}
+export {TriggerEvents,MediaEvents,Notifications}
