@@ -17,5 +17,7 @@ export default defineConfig({
           isCustomElement: (tag) => tag.includes('-')
         }
       }
-    })]
+    })],
+      site: 'https://nglmercer.github.io/trygger_overlay',
+      base: '/trygger_overlay',
 });
