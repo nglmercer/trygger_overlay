@@ -55,13 +55,14 @@ import { MediaEvents, TriggerEvents } from 'src/config/events';
 import type { MediaItem, MediaType } from '@utils/fetch/fetchapi';
 import MaterialVue from '@components/static/MaterialVue.vue';
 import PreviewSrc from './Preview-src.vue';
+import {apiConfig} from '@utils/fetch/fetchapi';
 // --- PROPS: Entradas del componente, controladas por el padre ---
 interface Props {
   mediaType: MediaType;
   imageBaseUrl?: string;
 }
 const props = withDefaults(defineProps<Props>(), {
-  imageBaseUrl: 'http://localhost:3000', // Por defecto, no hay base. El padre debería proveerla.
+  imageBaseUrl: apiConfig.getFullUrl(), // Por defecto, no hay base. El padre debería proveerla.
 });
 
 // --- EMITS: Eventos que el componente envía al padre ---

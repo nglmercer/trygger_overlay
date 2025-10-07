@@ -1,4 +1,5 @@
-const baseUrl = 'http://localhost:3000';
+import { apiConfig } from "./fetch/fetchapi";
+const baseUrl = apiConfig.getFullUrl();
 const getFullImageUrl = (relativePath: string,imageBaseUrl: string = baseUrl): string => {
   if (!imageBaseUrl || relativePath.startsWith('http')) {
     return relativePath;

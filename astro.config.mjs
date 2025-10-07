@@ -11,6 +11,7 @@ export default defineConfig({
     plugins: [tailwindcss()]
   },
   integrations: [vue({
+      devtools: true,
       template: {
         compilerOptions: {
           // Tratar todas las etiquetas con un guion como elementos personalizados
