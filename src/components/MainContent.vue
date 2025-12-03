@@ -1,38 +1,25 @@
-<!-- src/views/DashboardView.vue -->
+<!-- MainContent.vue for Media Organization -->
 <template>
-  <div class="w-full m-2 ">
-    <!-- 2. El componente que escucha los eventos y muestra el contenido -->
+  <div class="w-full m-2">
+    <!-- Media Organization Interface -->
     <TabContent>
-      <!-- 
-        Aquí proporcionamos el contenido para cada pestaña usando la sintaxis de slots de Vue.
-        La estructura es <template #NOMBRE_DEL_SLOT>...</template>
-        El nombre del slot debe coincidir con el `label` de la pestaña.
-      -->
-      
+      <!-- Media Gallery and Organization -->
       <template #Images>
-        <TriggerElements type="image" />
+        <MediaElements mediaType="image" />
       </template>
 
       <template #Videos>
-        <TriggerElements type="video" />
+        <MediaElements mediaType="video" />
       </template>
       
       <template #Sounds>
-        <TriggerElements type="audio"/>
+        <MediaElements mediaType="audio" />
       </template>
-
-      <template #Groups>
-        <TriggerElements type="groups"/>
-      </template>
-      
-      <!-- Puedes omitir los slots para las pestañas que no tienen contenido aún -->
-      
     </TabContent>
   </div>
 </template>
 
 <script setup lang="ts">
-// Importamos los componentes que vamos a usar en este "contenedor"
 import TabContent from '@components/content/TabContent.vue';
-import TriggerElements from './content/TriggerElements.vue';
+import MediaElements from '@components/content/MediaElements.vue';
 </script>

@@ -1,7 +1,4 @@
-// src/config/apiConfig.ts
-
-// Types for the configuration
-interface ProxyConfig {
+export interface ProxyConfig {
   enabled: boolean;
   url: string;
   auth?: {
@@ -11,108 +8,125 @@ interface ProxyConfig {
   timeout?: number;
 }
 
-interface ApiConfig {
+export interface ApiConfig {
   host: string;
-  port: number | string;
+  port?: number | string;
   protocol: 'http' | 'https';
+  apiPrefix?: string;
+
+  // Methods
   getFullUrl: () => string;
-  getWsUrl: () => string;
-  update: (newConfig: Partial<Omit<ApiConfig, 'getFullUrl' | 'update' | 'loadFromStorage' | 'saveToStorage'>>) => void;
-  loadFromStorage: () => void;
-  saveToStorage: () => void;
+  getWsUrl: () => string; // <--- New Method Definition
+  // Updated Omit to include getWsUrl
+  update: (newConfig: Partial<Omit<ApiConfig, 'getFullUrl' | 'getWsUrl' | 'update'>>) => void;
   proxy?: ProxyConfig;
 }
 
-// Storage key for localStorage
-const STORAGE_KEY = 'api-config';
+// 2. Adapters Interface
+interface EnvironmentAdapter {
+  // Updated Omit to include getWsUrl
+  getConfig: () => Partial<Omit<ApiConfig, 'getFullUrl' | 'getWsUrl' | 'update'>>;
+}
 
-// Default configuration values
-const defaultConfig = {
-  host: import.meta.env.VITE_API_HOST || '127.0.0.1',
-  port: import.meta.env.VITE_API_PORT || 3000,
-  protocol: 'http' as const,
-  proxy: import.meta.env.VITE_USE_PROXY === 'true' ? {
-    enabled: true,
-    url: import.meta.env.VITE_PROXY_URL || 'http://localhost:3001',
-    auth: (import.meta.env.VITE_PROXY_USERNAME && import.meta.env.VITE_PROXY_PASSWORD) ? {
-      username: import.meta.env.VITE_PROXY_USERNAME,
-      password: import.meta.env.VITE_PROXY_PASSWORD
-    } : undefined,
-    timeout: 30000
-  } : undefined
+// 3. Concrete Adapters
+
+// Adapter for Development
+const DevelopmentAdapter: EnvironmentAdapter = {
+  getConfig: () => ({
+    host: import.meta.env.VITE_API_HOST || '127.0.0.1',
+    port: import.meta.env.VITE_API_PORT || 3000,
+    protocol: 'http',
+    proxy: import.meta.env.VITE_USE_PROXY === 'true' ? {
+      enabled: true,
+      url: import.meta.env.VITE_PROXY_URL || 'http://localhost:3001',
+      auth: (import.meta.env.VITE_PROXY_USERNAME && import.meta.env.VITE_PROXY_PASSWORD) ? {
+        username: import.meta.env.VITE_PROXY_USERNAME,
+        password: import.meta.env.VITE_PROXY_PASSWORD
+      } : undefined,
+      timeout: 30000
+    } : undefined
+  })
 };
 
-// Load configuration from localStorage
-const loadConfigFromStorage = (): Partial<ApiConfig> => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      console.log('Loaded config from localStorage:', parsed);
-      return parsed;
-    }
-  } catch (error) {
-    console.warn('Failed to load config from localStorage:', error);
-  }
-  return {};
-};
+// Adapter for Production
+const ProductionAdapter: EnvironmentAdapter = {
+  getConfig: () => {
+    const isBrowser = typeof window !== 'undefined';
+    const defaultHost = isBrowser ? window.location.hostname : 'localhost';
+    const defaultProtocol = isBrowser && window.location.protocol.includes('https') ? 'https' : 'https';
 
-// Save configuration to localStorage
-const saveConfigToStorage = (config: Partial<ApiConfig>): void => {
-  try {
-    // Only save serializable properties
-    const configToSave = {
-      host: config.host,
-      port: config.port,
-      protocol: config.protocol,
-      proxy: config.proxy
+    return {
+      host: import.meta.env.VITE_API_HOST || defaultHost,
+      port: import.meta.env.VITE_API_PORT ? Number(import.meta.env.VITE_API_PORT) : undefined,
+      protocol: (import.meta.env.VITE_API_PROTOCOL as 'http' | 'https') || defaultProtocol,
+      proxy: undefined
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(configToSave));
-    console.log('Config saved to localStorage:', configToSave);
-  } catch (error) {
-    console.error('Failed to save config to localStorage:', error);
   }
 };
 
-// Initialize configuration with localStorage data
-const storedConfig = loadConfigFromStorage();
-
-// Create the main API configuration object
-const apiConfig: ApiConfig = {
-  // Merge default config with stored config
-  ...defaultConfig,
-  ...storedConfig,
-  
-  getFullUrl(): string {
-    return `${this.protocol}://${this.host}:${this.port}`;
-  },
-  getWsUrl(): string {
-    return `${this.protocol === 'http' ? 'ws' : 'wss'}://${this.host}:${this.port}/ws`;
-  },
-  update(newConfig: Partial<Omit<ApiConfig, 'getFullUrl' | 'update' | 'loadFromStorage' | 'saveToStorage'>>) {
-    // Update the current configuration
-    Object.assign(this, newConfig);
-    
-    // Save to localStorage
-    this.saveToStorage();
-    
-    console.log('API config updated:', this.getFullUrl());
-  },
-  
-  loadFromStorage() {
-    const stored = loadConfigFromStorage();
-    Object.assign(this, { ...defaultConfig, ...stored });
-    console.log('Config reloaded from storage:', this.getFullUrl());
-  },
-  
-  saveToStorage() {
-    saveConfigToStorage(this);
+// 4. Factory
+const getConfigAdapter = (): EnvironmentAdapter => {
+  if (import.meta.env.MODE === 'production') {
+    return ProductionAdapter;
   }
+  return DevelopmentAdapter;
 };
 
-// Initial save to ensure localStorage has the current config
-apiConfig.saveToStorage();
+// 5. Implementation
+const createApiConfig = (): ApiConfig => {
+  const adapter = getConfigAdapter();
+  const initialConfig = adapter.getConfig();
+
+  return {
+    host: initialConfig.host || 'localhost',
+    port: initialConfig.port,
+    protocol: initialConfig.protocol || 'http',
+    proxy: initialConfig.proxy,
+
+    getFullUrl() {
+      const protocol = this.protocol;
+      const host = this.host;
+      const port = this.port;
+
+      const isStandardPort =
+        (!port) ||
+        (protocol === 'http' && Number(port) === 80) ||
+        (protocol === 'https' && Number(port) === 443);
+
+      const portSuffix = isStandardPort ? '' : `:${port}`;
+
+      return `${protocol}://${host}${portSuffix}`;
+    },
+
+    // --- New Implementation ---
+    getWsUrl() {
+      // Determine protocol: http -> ws, https -> wss
+      const isSecure = this.protocol === 'https';
+      const wsProtocol = isSecure ? 'wss' : 'ws';
+      
+      const host = this.host;
+      const port = this.port;
+
+      // Re-use logic: Omit port if it's standard for the protocol
+      // Note: ws uses port 80, wss uses port 443 (same as http/s)
+      const isStandardPort =
+        (!port) ||
+        (this.protocol === 'http' && Number(port) === 80) ||
+        (this.protocol === 'https' && Number(port) === 443);
+
+      const portSuffix = isStandardPort ? '' : `:${port}`;
+
+      return `${wsProtocol}://${host}${portSuffix}`;
+    },
+
+    update(newConfig) {
+      Object.assign(this, newConfig);
+      // Optional: Log both URLs to verify update
+      // console.log('[ApiConfig] Updated.', { http: this.getFullUrl(), ws: this.getWsUrl() });
+    }
+  };
+};
+
+export const apiConfig = createApiConfig();
 
 export default apiConfig;
-export type { ApiConfig, ProxyConfig };
-export { apiConfig };

@@ -1,43 +1,99 @@
-# Astro Starter Kit: Minimal
+# Media Organization Tool
 
-```sh
-npm create astro@latest -- --template minimal
+Herramienta para organizar elementos multimedia y crear drafts para publicaciones como YouTube. Este proyecto ha sido refactorizado para enfocarse exclusivamente en la organización de contenido multimedia.
+
+## Características
+
+- **Galería Multimedia**: Organiza y visualiza imágenes, videos y archivos de audio
+- **Reproductor Multimedia**: Reproduce diferentes tipos de medios con controles avanzados
+- **Gestión de Drafts**: Crea y organiza drafts para publicaciones
+- **Interfaz Intuitiva**: Diseño responsive y fácil de usar
+- **Gestión de Audio**: Soporte completo para reproducción de audio con permisos automáticos
+
+## Estructura del Proyecto
+
+```
+src/
+├── components/
+│   ├── content/           # Componentes de contenido multimedia
+│   │   ├── MediaElements.vue
+│   │   ├── MediaGallery.vue
+│   │   └── TabContent.vue
+│   ├── media/            # Componentes de gestión de medios
+│   │   ├── upload.vue
+│   │   ├── SearchInput.vue
+│   │   ├── SortDropdown.vue
+│   │   └── ViewToggle.vue
+│   ├── widget/           # Componentes del reproductor
+│   │   ├── MediaPlayer.vue
+│   │   ├── MediaDisplay.vue
+│   │   ├── MediaControls.vue
+│   │   └── MediaInfo.vue
+│   ├── MainContent.vue   # Contenido principal
+│   └── NotificationContainer.vue
+├── config/
+│   ├── events.ts         # Configuración de eventos
+│   └── tabs.ts          # Configuración de pestañas
+├── utils/
+│   ├── fetch/           # Utilidades de API
+│   ├── Emitter.ts       # Sistema de eventos
+│   └── brodcast.ts      # Comunicación entre ventanas
+└── pages/
+    ├── index.astro      # Página principal
+    └── widget.astro     # Widget de reproducción
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Uso
 
-## 🚀 Project Structure
+### Galería Multimedia
+1. Navega entre las pestañas: Images, Videos, Sounds
+2. Sube archivos usando el botón de añadir
+3. Organiza tus archivos en categorías
+4. Usa la búsqueda y filtros para encontrar contenido específico
 
-Inside of your Astro project, you'll see the following folders and files:
+### Reproductor Multimedia
+1. Selecciona un elemento multimedia de la galería
+2. Usa los controles de reproducción estándar
+3. Ajusta volumen y configuración de audio
+4. Visualiza información del medio
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+### Drafts
+1. Crea nuevos drafts para publicaciones
+2. Organiza contenido por proyectos
+3. Añade notas y descripciones
+4. Prepara contenido para YouTube u otras plataformas
+
+## Tecnologías
+
+- **Astro**: Framework principal
+- **Vue 3**: Componentes interactivos
+- **TypeScript**: Tipado seguro
+- **Tailwind CSS**: Estilos responsive
+- **Web Components**: Componentes ligeros
+
+## Desarrollo
+
+```bash
+# Instalar dependencias
+npm install
+
+# Modo desarrollo
+npm run dev
+
+# Construir para producción
+npm run build
+
+# Previsualizar producción
+npm run preview
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Configuración
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+La configuración principal se encuentra en:
+- `src/config/events.ts`: Eventos del sistema
+- `src/config/tabs.ts`: Configuración de pestañas
+- `src/utils/fetch/config/apiConfig.ts`: Configuración de API
 
-Any static assets, like images, can be placed in the `public/` directory.
+## Licencia
 
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Proyecto open source para organización de contenido multimedia.
