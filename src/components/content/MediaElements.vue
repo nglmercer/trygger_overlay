@@ -114,16 +114,19 @@ mediaItems.value = [
         volume: 0.5,
         duration: 30,
         maxDuration: false,
+        randomPosition: false,
         active: true,
     }
 ];
 const getTriggers = async () => {
     try {
-        const triggers = await triggerApi.list();
-        console.log("triggers",triggers)
+      const triggers = await triggerApi.list();
+      console.log("triggers",triggers)
     } catch (error) {
-        console.error("Error fetching triggers:", error);
+      console.error("Error fetching triggers:", error);
+      // Handle gracefully when backend is not available
+      console.warn("Backend server not available. Using mock data for triggers.");
     }
-}
+  }
 onMounted(getTriggers)
 </script>

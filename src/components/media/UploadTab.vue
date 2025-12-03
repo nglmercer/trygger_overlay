@@ -35,7 +35,7 @@ const handleFiles = async (fileList: FileList | File[]) => {
         continue;
       }
       try {
-        const res = await mediaApi.upload(mediaType, file, { fileName: file.name, metadata: { size: file.size, type: file.type } });
+        const res = await mediaApi.uploadMedia(mediaType, file, { fileName: file.name, metadata: { size: file.size, type: file.type } });
         console.log('Uploaded:', res);
         emitter.emit('show-notification', {
           type: 'success',
