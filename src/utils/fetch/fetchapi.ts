@@ -2,6 +2,7 @@ import BaseApi, { PrefixedApi } from './commons/BaseApi';
 import type { FetchOptions } from './commons/httpservice';
 import apiConfig, { type ApiConfig } from '../../config/apiConfig';
 export { apiConfig }
+
 export type MediaType = 'image' | 'audio' | 'video' | 'subtitle';
 
 export interface MediaRecord {
@@ -40,7 +41,7 @@ export interface SizeResponse {
 }
 
 class MediaApi extends PrefixedApi {
-  constructor(config: ApiConfig) {
+  constructor(config: typeof apiConfig) {
     super(config, '/api/media');
   }
 
@@ -56,18 +57,15 @@ class MediaApi extends PrefixedApi {
   async deleteMedia(id: string): Promise<{ message: string }> {
     return this.delete<{ message: string }>(`/${id}`);
   }
-
+  async getByType(type: MediaType): Promise<MediaRecord[]> {
+    return this.getMediaByType(type);
+  }
   async syncMedia(): Promise<SyncResponse> {
     return this.post<SyncResponse>('/sync');
   }
 
   async getMediaByType(type: MediaType): Promise<MediaRecord[]> {
     return this.get<MediaRecord[]>(`/data/${type}`);
-  }
-
-  // Alias for getMediaByType to match the interface expected by components
-  async getByType(type: MediaType): Promise<MediaRecord[]> {
-    return this.getMediaByType(type);
   }
 
   async getStats(): Promise<StatsResponse> {
@@ -85,15 +83,12 @@ class MediaApi extends PrefixedApi {
   async getAllMedia(): Promise<Record<string, MediaRecord>> {
     return this.get<Record<string, MediaRecord>>('/data');
   }
+  async getMediaById(id: string): Promise<MediaRecord> {
+    return this.get<MediaRecord>(`/${id}`);
+  }
 }
-
-// Create and export a mediaApi instance
-export const mediaApi = new MediaApi(apiConfig);
-
-// Export the default class as well
+export const mediaApi = new MediaApi(apiConfig)
 export default MediaApi;
-
-// Additional types and interfaces for trigger functionality
 export interface MediaItem {
   id: string;
   url: string;
