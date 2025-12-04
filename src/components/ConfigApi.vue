@@ -160,7 +160,6 @@ const resetConfig = () => {
 
 const reloadFromStorage = () => {
     // Recargar desde localStorage
-    apiConfig.loadFromStorage();
     loadCurrentConfig();
     
     // Limpiar estado de conexión

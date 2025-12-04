@@ -1,5 +1,5 @@
 // proxyConfig.ts - Configuración de proxyo
-import type{ ProxyConfig } from "../config/apiConfig";
+import type { ProxyConfig } from "../../../config/apiConfig";
 class ProxyConfiguration {
   private config: ProxyConfig = {
     enabled: false,
@@ -33,7 +33,7 @@ class ProxyConfiguration {
    */
   getAuthHeaders(): Record<string, string> {
     if (!this.config.auth) return {};
-    
+
     const credentials = btoa(`${this.config.auth.username}:${this.config.auth.password}`);
     return {
       'Proxy-Authorization': `Basic ${credentials}`

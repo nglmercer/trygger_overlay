@@ -51,82 +51,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-// Ajusta la ruta de importación a donde guardaste tu archivo API
-import { triggerApi,TriggerFormUtils } from '@utils/fetch/fetchapi';
-import type { MediaItem,TriggerForm } from '@utils/fetch/fetchapi';
+import { ref } from 'vue';
+// Import only media API for media items
+import { mediaApi, type MediaRecord } from '@utils/fetch/fetchapi';
 import MaterialVue from '@components/static/MaterialVue.vue';
 
 // Estado Reactivo
-const mediaItems = ref<TriggerForm[]>([]);
+const mediaItems = ref<MediaRecord[]>([]);
 const error = ref<string | null>(null);
 const editMedia = (id: number | string) => {
     console.log('Editar media con ID:', id);
 }
-mediaItems.value = [
-    {
-        name: 'Video 1',
-        item: {
-            id: "1",
-            url: 'https://www.youtube.com/watch?v=123456',
-            type: 'video',
-            name: 'Video 1',
-            metadata: {
-                title: 'Video 1',
-                description: 'Descripción del video 1',
-            },
-        },
-        size: 50,
-        volume: 0.8, // ¡ESTA PROPIEDAD FALTABA! VideoForm requiere volume
-        duration: 5,
-        maxDuration: false,
-        position: { x: 0, y: 0 },
-        randomPosition: false,
-        active: true,
-    },
-    // Ejemplo de ImageForm
-    {
-        name: 'Image 1',
-        item: {
-            id: "2",
-            url: 'https://example.com/image.jpg',
-            type: 'image',
-            name: 'Image 1',
-        },
-        size: 100,
-        // NO tiene volume (ImageForm no lo requiere)
-        duration: 0,
-        maxDuration: true,
-        position: { x: 50, y: 50 },
-        randomPosition: true,
-        active: true,
-    },
-    // Ejemplo de AudioForm
-    {
-        name: 'Audio 1',
-        item: {
-            id: "3",
-            url: 'https://example.com/audio.mp3',
-            type: 'audio',
-            name: 'Audio 1',
-        },
-        // NO tiene size ni position (AudioForm no los requiere)
-        volume: 0.5,
-        duration: 30,
-        maxDuration: false,
-        randomPosition: false,
-        active: true,
-    }
-];
-const getTriggers = async () => {
+
+// Load media items on mount
+const loadMediaItems = async () => {
     try {
-      const triggers = await triggerApi.list();
-      console.log("triggers",triggers)
+        const allMedia = await mediaApi.getAllMedia();
+        mediaItems.value = Object.values(allMedia);
     } catch (error) {
-      console.error("Error fetching triggers:", error);
-      // Handle gracefully when backend is not available
-      console.warn("Backend server not available. Using mock data for triggers.");
+        console.error('Error loading media items:', error);
+        // Handle gracefully when backend is not available
+        console.warn("Backend server not available. No media items loaded.");
     }
-  }
-onMounted(getTriggers)
+};
+
+// Load media items when component mounts
+loadMediaItems();
 </script>

@@ -1,7 +1,7 @@
 import BaseApi, { PrefixedApi } from './commons/BaseApi';
 import type { FetchOptions } from './commons/httpservice';
-import apiConfig from './config/apiConfig';
-export {apiConfig}
+import apiConfig, { type ApiConfig } from '../../config/apiConfig';
+export { apiConfig }
 export type MediaType = 'image' | 'audio' | 'video' | 'subtitle';
 
 export interface MediaRecord {
@@ -40,7 +40,7 @@ export interface SizeResponse {
 }
 
 class MediaApi extends PrefixedApi {
-  constructor(config: typeof apiConfig) {
+  constructor(config: ApiConfig) {
     super(config, '/api/media');
   }
 
@@ -116,7 +116,7 @@ export interface TriggerForm {
 
 // Trigger API class
 class TriggerApi extends PrefixedApi {
-  constructor(config: typeof apiConfig) {
+  constructor(config: ApiConfig) {
     super(config, '/api/triggers');
   }
 
@@ -183,21 +183,21 @@ export class TriggerFormUtils {
 
   static validateForm(form: TriggerForm): string[] {
     const errors: string[] = [];
-    
+
     if (!form.name.trim()) {
       errors.push('Name is required');
     }
-    
+
     if (!form.item) {
       errors.push('Media item is required');
     }
-    
+
     if (form.item.type === 'video' || form.item.type === 'audio') {
       if (form.volume === undefined || form.volume < 0 || form.volume > 1) {
         errors.push('Volume must be between 0 and 1');
       }
     }
-    
+
     if (form.item.type === 'image' || form.item.type === 'video') {
       if (!form.position || form.randomPosition) {
         // Position is optional if randomPosition is true
@@ -207,7 +207,7 @@ export class TriggerFormUtils {
         }
       }
     }
-    
+
     return errors;
   }
 }

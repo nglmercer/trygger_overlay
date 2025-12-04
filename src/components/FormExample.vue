@@ -199,9 +199,8 @@ import { ref, watch, computed, onMounted } from "vue"
 import MaterialVue from '@components/static/MaterialVue.vue';
 import { DlgCont } from '@litcomponents/modal'
 import { emitter } from "@utils/Emitter";
-import { MediaEvents, TriggerEvents } from "src/config/events";
+import { MediaEvents } from "src/config/events";
 import type { MediaItem, MediaType } from "@utils/fetch/fetchapi";
-import { triggerApi, applyDefaultValues } from "@utils/fetch/fetchapi";
 import PreviewSrc from "./content/Preview-src.vue";
 import { getFullImageUrl } from "@utils/Url";
 
@@ -402,14 +401,6 @@ const handleDelete = async () => {
         modalRef.value?.hide();
     }) */
 }
-// --- EVENT HANDLERS ---
-emitter.on(TriggerEvents.FormType, (type: FormTypes) => {
-    formType.value = type;
-    setFormByType(type);
-});
-
-// temporal emit, to test the form type
-emitter.emit(TriggerEvents.FormType, 'video')
 
 emitter.on(MediaEvents.selectedMedia, (data: { item: MediaItem, type: MediaType }) => {
     console.log("selectedMedia", data);
@@ -424,9 +415,7 @@ emitter.on(MediaEvents.selectedMedia, (data: { item: MediaItem, type: MediaType 
     const modal = document.querySelector('.upload_modal') as DlgCont;
     modal.hide();
 })
-emitter.on(TriggerEvents.setForm, (data: TriggerForm) => {
-    form.value = data;
-})
+
 // Watch for changes in the formType dropdown and reset the form
 watch(formType, (newType) => {
     setFormByType(newType);
@@ -446,10 +435,10 @@ const selectFile = () => {
 
 const handleSubmit = () => {
     console.log("Form submitted:", form.value);
-    triggerApi.create(applyDefaultValues(form.value)).then((res) => {
+/*     triggerApi.create(applyDefaultValues(form.value)).then((res) => {
         console.log("res", res);
         modalRef.value?.hide();
-    })
+    }) */
 
 }
 

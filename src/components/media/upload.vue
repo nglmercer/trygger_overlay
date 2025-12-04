@@ -9,8 +9,7 @@ import UploadTab from '@components/media/UploadTab.vue';
 import MediaGallery from '@components/content/MediaGallery.vue';
 import { mediaApi, type MediaType } from '@utils/fetch/fetchapi.ts';
 import { emitter } from '@utils/Emitter';
-import { TriggerEvents } from 'src/config/events';
-type Tab = 'Images' | 'Videos' | 'Sounds' | 'Upload';
+import type { Tab } from '@components/types';
 type ViewMode = 'grid' | 'list';
 
 const TABS: { id: Tab; icon: string }[] = [
@@ -22,23 +21,21 @@ const TABS: { id: Tab; icon: string }[] = [
 const tabsType: Record<Exclude<Tab, 'Upload'>, MediaType> = {
   'Images': 'image',
   'Videos': 'video',
-  'Sounds': 'audio'
+  'Sounds': 'audio',
+  'Subtitles': 'subtitle'
 };
 
 const mediaTypeToTab: Record<MediaType, Tab> = {
   'image': 'Images',
   'video': 'Videos',
-  'audio': 'Sounds'
+  'audio': 'Sounds',
+  'subtitle': 'Subtitles'
 };
 
 const activeTab = ref<Tab>('Images');
 const viewMode = ref<ViewMode>('grid');
 const mediaItems = ref<any[]>([]);
 
-emitter.on(TriggerEvents.SelectFile, (type: MediaType) => {
-  console.log("type", type);
-  activeTab.value = mediaTypeToTab[type];
-})
 
 // Watch for changes in activeTab and fetch corresponding media
 watch(

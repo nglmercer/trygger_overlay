@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 
 const props = defineProps<{
-  type: 'Images' | 'Videos' | 'Sounds' | 'Upload';
+  type: Tab;
 }>();
 
 const emit = defineEmits<{ (e: 'go-upload'): void }>();

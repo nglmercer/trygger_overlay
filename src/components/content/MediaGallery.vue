@@ -48,10 +48,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineEmits  } from 'vue';
+import { ref, watch  } from 'vue';
 import { mediaApi } from '@utils/fetch/fetchapi';
 import { emitter } from '@utils/Emitter';
-import { MediaEvents, TriggerEvents } from 'src/config/events';
 import type { MediaItem, MediaType } from '@utils/fetch/fetchapi';
 import MaterialVue from '@components/static/MaterialVue.vue';
 import PreviewSrc from './Preview-src.vue';
@@ -129,7 +128,7 @@ const DeleteMedia = async (id: string) => {
   console.log('DeleteMedia:', id);
   const itemName = mediaItems.value.find(item => item.id === id)?.name;
   try {
-    await mediaApi.remove(id);
+    await mediaApi.deleteMedia(id);
     mediaItems.value = mediaItems.value.filter(item => item.id !== id);
         emitter.emit('show-notification', {
           type: 'success',
@@ -146,14 +145,9 @@ const DeleteMedia = async (id: string) => {
 const checkMedia = (item: MediaItem) => {
   selectedItem.value = item;
 //  console.log("selectedItem.value", selectedItem.value,selectedType.value);
-  emitter.emit(MediaEvents.selectedMedia, {
-    item: JSON.parse(JSON.stringify(item)), // Convert Proxy to plain object
-    type: selectedType.value
-  })
+
 }
-emitter.on(TriggerEvents.SelectFile, (type: MediaType) => {
-  selectedType.value = type;
-})
+
 // --- REACTIVIDAD ---
 // Observamos cambios en la prop `mediaType`. Cuando el padre la cambia,
 // esta función se ejecuta para volver a cargar los datos.

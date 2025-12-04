@@ -1,7 +1,7 @@
 // httpservice.ts - Servicio HTTP actualizado con soporte para proxy
 import { safeParse } from "./safeparse.ts";
 import { proxyConfig } from './proxyConfig.ts';
-import type{ ProxyConfig } from "../config/apiConfig.ts";
+import type { ProxyConfig } from "../../../config/apiConfig.ts";
 
 type FetchOptions = Omit<RequestInit, 'headers'> & {
   headers?: Record<string, string>;
@@ -18,7 +18,7 @@ async function handleResponse<T>(res: Response, responseType: string = 'json'): 
   if (res.status === 204) {
     return Promise.resolve(undefined);
   }
-  
+
   // Handle different response types
   switch (responseType) {
     case 'blob':
@@ -33,7 +33,7 @@ async function handleResponse<T>(res: Response, responseType: string = 'json'): 
       if (!text) {
         return Promise.resolve(undefined);
       }
-      
+
       try {
         return safeParse(text) as T;
       } catch (error) {
@@ -48,7 +48,7 @@ async function handleResponse<T>(res: Response, responseType: string = 'json'): 
  */
 function prepareFetchOptions(url: string, options: FetchOptions = {}): [string, RequestInit] {
   const { useProxy = proxyConfig.isEnabled(), proxyConfig: customProxyConfig, ...fetchOptions } = options;
-  
+
   // Si no se usa proxy, retorna como estaba
   if (!useProxy) {
     return [url, fetchOptions];
@@ -58,12 +58,12 @@ function prepareFetchOptions(url: string, options: FetchOptions = {}): [string, 
   if (customProxyConfig) {
     const tempConfig = proxyConfig.get();
     proxyConfig.update(customProxyConfig);
-    
+
     const result = buildProxyRequest(url, fetchOptions);
-    
+
     // Restaurar configuración original
     proxyConfig.update(tempConfig);
-    
+
     return result;
   }
 
@@ -76,7 +76,7 @@ function prepareFetchOptions(url: string, options: FetchOptions = {}): [string, 
  */
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
   if (!headers) return {};
-  
+
   if (headers instanceof Headers) {
     const result: Record<string, string> = {};
     headers.forEach((value, key) => {
@@ -84,7 +84,7 @@ function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
     });
     return result;
   }
-  
+
   if (Array.isArray(headers)) {
     const result: Record<string, string> = {};
     headers.forEach(([key, value]) => {
@@ -92,7 +92,7 @@ function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
     });
     return result;
   }
-  
+
   // Si es un objeto plano, asumimos que es Record<string, string>
   return headers as Record<string, string>;
 }
@@ -108,7 +108,7 @@ function buildProxyRequest(url: string, options: RequestInit): [string, RequestI
   const proxyURL = proxyConfig.getProxyUrl();
   const proxyAuthHeaders = proxyConfig.getAuthHeaders();
   const normalizedHeaders = normalizeHeaders(options.headers);
-  
+
   // En entornos del navegador, usamos el proxy como prefijo de URL
   // En Node.js, esto se manejaría diferente con agentes HTTP
   const finalUrl = proxyURL;
@@ -138,7 +138,7 @@ async function executeRequest<T>(
     const response = await requestFn();
     return await handleResponse<T>(response, responseType);
   } catch (error) {
-    
+
     // Si hay una función de fallback (sin proxy), intentarla
     if (fallbackFn) {
       console.warn('Error con proxy, intentando sin proxy:', error);
@@ -150,7 +150,7 @@ async function executeRequest<T>(
         throw fallbackError;
       }
     }
-    
+
     throw error;
   }
 }
@@ -159,18 +159,18 @@ const http = {
   get: <T>(url: string, options: FetchOptions = {}): Promise<T> => {
     const { responseType = 'json', ...fetchOptions } = options;
     const [finalUrl, finalOptions] = prepareFetchOptions(url, { ...fetchOptions, method: 'GET' });
-    
+
     const requestWithProxy = () => fetch(finalUrl, finalOptions);
-    const requestWithoutProxy = options.useProxy !== false 
+    const requestWithoutProxy = options.useProxy !== false
       ? () => fetch(url, { ...fetchOptions, method: 'GET' })
       : undefined;
-    
+
     return executeRequest<T>(requestWithProxy, requestWithoutProxy, responseType);
   },
 
   post: <T>(url: string, body: RequestBody = {}, options: FetchOptions = {}): Promise<T> => {
     let finalOptions = { ...options, method: 'POST' as const };
-    
+
     if (body instanceof FormData) {
       // Filtrar Content-Type para FormData
       const headers: Record<string, string> = {};
@@ -196,12 +196,12 @@ const http = {
     }
 
     const [finalUrl, preparedOptions] = prepareFetchOptions(url, finalOptions);
-    
+
     const requestWithProxy = () => fetch(finalUrl, preparedOptions);
-    const requestWithoutProxy = options.useProxy !== false 
+    const requestWithoutProxy = options.useProxy !== false
       ? () => fetch(url, finalOptions)
       : undefined;
-    
+
     return executeRequest<T>(requestWithProxy, requestWithoutProxy);
   },
 
@@ -220,12 +220,12 @@ const http = {
     };
 
     const [finalUrl, preparedOptions] = prepareFetchOptions(url, finalOptions);
-    
+
     const requestWithProxy = () => fetch(finalUrl, preparedOptions);
-    const requestWithoutProxy = options.useProxy !== false 
+    const requestWithoutProxy = options.useProxy !== false
       ? () => fetch(url, finalOptions)
       : undefined;
-    
+
     return executeRequest<T>(requestWithProxy, requestWithoutProxy);
   },
 
@@ -244,23 +244,23 @@ const http = {
     };
 
     const [finalUrl, preparedOptions] = prepareFetchOptions(url, finalOptions);
-    
+
     const requestWithProxy = () => fetch(finalUrl, preparedOptions);
-    const requestWithoutProxy = options.useProxy !== false 
+    const requestWithoutProxy = options.useProxy !== false
       ? () => fetch(url, finalOptions)
       : undefined;
-    
+
     return executeRequest<T>(requestWithProxy, requestWithoutProxy);
   },
 
   delete: <T>(url: string, options: FetchOptions = {}): Promise<T> => {
     const [finalUrl, finalOptions] = prepareFetchOptions(url, { ...options, method: 'DELETE' });
-    
+
     const requestWithProxy = () => fetch(finalUrl, finalOptions);
-    const requestWithoutProxy = options.useProxy !== false 
+    const requestWithoutProxy = options.useProxy !== false
       ? () => fetch(url, { ...options, method: 'DELETE' })
       : undefined;
-    
+
     return executeRequest<T>(requestWithProxy, requestWithoutProxy);
   }
 };
@@ -269,7 +269,7 @@ function getParams(paramNames: string[] = []): Record<string, string> {
   if (typeof window === 'undefined') {
     return {};
   }
- 
+
   const urlParams = new URLSearchParams(window.location.search);
   let paramsObject: Record<string, string> = {};
   urlParams.forEach((value, key) => {
@@ -286,7 +286,7 @@ function getParams(paramNames: string[] = []): Record<string, string> {
       }
     }
   }
-  
+
   return paramsObject;
 }
 
