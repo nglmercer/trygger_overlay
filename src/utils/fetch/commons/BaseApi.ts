@@ -5,7 +5,7 @@ import {
   type FetchOptions,
   type ProxyConfig
 } from './httpservice.ts';
-import { type ApiConfig } from '../../../config/apiConfig.ts';
+import { type ApiConfig, apiConfig } from '../../../config/apiConfig.ts';
 
 interface UserInfo {
   token?: string;
@@ -36,8 +36,8 @@ class BaseApi {
   user: Record<string, any>;
 
   // El constructor ahora recibe el módulo de configuración
-  constructor(config: ApiConfig) {
-    this.config = config; // <-- Guarda la referencia
+  constructor(config?: ApiConfig) {
+    this.config = config || apiConfig; // <-- Guarda la referencia
     this.http = http;
     const info: UserInfo = safeParse(localStorage.getItem("info")) || {};
     this.token = info.token || localStorage.getItem("token") || undefined;
@@ -64,16 +64,7 @@ class BaseApi {
     if (typeof this.config.getFullUrl === 'function') {
       return this.config.getFullUrl();
     }
-    const { protocol = 'http', host, port, apiPrefix } = this.config;
-    const isStandardPort =
-      (!port) ||
-      (protocol === 'http' && Number(port) === 80) ||
-      (protocol === 'https' && Number(port) === 443);
-
-    const portSuffix = isStandardPort ? '' : `:${port}`;
-    const prefix = apiPrefix && apiPrefix.trim() ? `/${apiPrefix.replace(/^\/+/, '')}` : '';
-
-    return `${protocol}://${host}${portSuffix}${prefix}`;
+    return apiConfig.getFullUrl()
   }
 
   /**
