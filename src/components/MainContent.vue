@@ -29,4 +29,35 @@ import { emitter } from '@utils/Emitter';
 import TabContent from '@components/content/TabContent.vue';
 import MediaGallery from './content/MediaGallery.vue';
 import DraftsList from './drafts/DraftsList.vue';
+
+// Component-level logic for MainContent
+const isOpen = ref(false);
+
+// Function to trigger open select elements event
+const openSelectElements = () => {
+  emitter.emit('open-select-elements', {
+    isOpen: true,
+    timestamp: Date.now()
+  });
+  isOpen.value = true;
+};
+
+// Cleanup function
+const cleanup = () => {
+  isOpen.value = false;
+};
+
+// Setup and cleanup
+onMounted(() => {
+  emitter.on('close-elements', cleanup);
+});
+
+onUnmounted(() => {
+  emitter.off('close-elements', cleanup);
+});
+
+// Expose the function to parent components
+defineExpose({
+  openSelectElements
+});
 </script>

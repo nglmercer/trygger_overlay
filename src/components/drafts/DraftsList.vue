@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { emitter } from '@utils/Emitter';
 import DraftsApi, { type Draft } from '@utils/fetch/draftsapi.ts';
+//@ts-ignore
 import DraftItem from './DraftItem.vue';
 import DraftForm from './DraftForm.vue';
 import MaterialVue from '@components/static/MaterialVue.vue';
