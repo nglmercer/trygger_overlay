@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted, onUnmounted, watch, computed } from 'vue';
 import { emitter } from '@utils/Emitter';
 import { MediaEvents } from 'src/config/events';
-import DraftsApi, { type Draft, type CreateDraftDto, type UpdateDraftDto } from '@utils/fetch/draftsapi.ts';
+import DraftsApi, { type Draft, type CreateDraftDto, type UpdateDraftDto, DraftStatus } from '@utils/fetch/draftsapi.ts';
 import apiConfig from 'src/config/apiConfig';
 import DraftFormFields from './DraftFormFields.vue';
 import MediaSelection from './MediaSelection.vue';
@@ -20,12 +20,12 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-// Estado para el formulario del draft
-const draftForm = reactive({
-  title: '',
-  description: '',
-  duration: 30,
-  priority: 'medium'
+// Estado para el formulario del draft - compatible con CreateDraftDto
+const draftForm = reactive<CreateDraftDto>({
+  content: '',
+  mediaIds: [],
+  tags: [],
+  status: DraftStatus.DRAFT
 });
 
 // Estado para los elementos multimedia seleccionados (array)
@@ -40,10 +40,10 @@ const isEditing = ref(false);
 
 // Función para resetear el formulario
 const resetForm = () => {
-  draftForm.title = '';
-  draftForm.description = '';
-  draftForm.duration = 30;
-  draftForm.priority = 'medium';
+  draftForm.content = '';
+  draftForm.mediaIds = [];
+  draftForm.tags = [];
+  draftForm.status = DraftStatus.DRAFT;
   selectedMediaItems.value = [];
 };
 
@@ -52,10 +52,10 @@ watch(() => props.editingDraft, (newDraft) => {
   if (newDraft) {
     // Modo edición: cargar datos del draft
     isEditing.value = true;
-    draftForm.title = newDraft.content || '';
-    draftForm.description = ''; // El API actual no tiene description
-    draftForm.duration = 30; // Valor por defecto
-    draftForm.priority = 'medium'; // Valor por defecto
+    draftForm.content = newDraft.content || '';
+    draftForm.mediaIds = newDraft.mediaIds || [];
+    draftForm.tags = []; // El API actual no tiene tags en el Draft interface
+    draftForm.status = DraftStatus.DRAFT; // Valor por defecto
     
     // Cargar medios si existen los IDs
     if (newDraft.mediaIds && newDraft.mediaIds.length > 0) {
@@ -130,7 +130,7 @@ const clearSelection = () => {
 
 // Función para enviar el formulario
 const submitDraft = async () => {
-  if (selectedMediaItems.value.length === 0 || !draftForm.title) {
+  if (selectedMediaItems.value.length === 0 || !draftForm.content?.trim()) {
     emitter.emit('show-notification', {
       type: 'error',
       message: 'Por favor completa todos los campos requeridos y selecciona al menos un elemento multimedia.',
@@ -141,25 +141,26 @@ const submitDraft = async () => {
   loading.value = true;
 
   try {
-    const mediaIds = selectedMediaItems.value.map(item => item.id);
-    const draftData = {
-      content: draftForm.title,
-      mediaIds: mediaIds
-    };
+    // Actualizar mediaIds en el formulario
+    draftForm.mediaIds = selectedMediaItems.value.map(item => item.id);
 
     if (isEditing.value && props.editingDraft) {
-      // Modo edición
-      await draftsApi.updateDraft(props.editingDraft.id, draftData);
+      // Modo edición - usamos UpdateDraftDto para la API
+      const updateData: UpdateDraftDto = {
+        content: draftForm.content,
+        mediaIds: draftForm.mediaIds
+      };
+      await draftsApi.updateDraft(props.editingDraft.id, updateData);
       emitter.emit('show-notification', {
         type: 'success',
-        message: `Draft "${draftForm.title}" actualizado exitosamente.`,
+        message: `Draft "${draftForm.content}" actualizado exitosamente.`,
       });
     } else {
-      // Modo creación
-      await draftsApi.createDraft(draftData);
+      // Modo creación - usamos CreateDraftDto completo
+      await draftsApi.createDraft(draftForm);
       emitter.emit('show-notification', {
         type: 'success',
-        message: `Draft "${draftForm.title}" con ${selectedMediaItems.value.length} elementos creado exitosamente.`,
+        message: `Draft "${draftForm.content}" con ${selectedMediaItems.value.length} elementos creado exitosamente.`,
       });
     }
 
@@ -178,7 +179,7 @@ const submitDraft = async () => {
 
 // Computed properties para validación
 const canSubmit = computed(() => {
-  return selectedMediaItems.value.length > 0 && draftForm.title.trim() !== '';
+  return selectedMediaItems.value.length > 0 && draftForm.content?.trim() !== '';
 });
 
 // Montar y desmontar el listener del evento
@@ -204,10 +205,9 @@ onUnmounted(() => {
           </h3>
           <DraftFormFields 
             :form-data="draftForm"
-            @update:title="draftForm.title = $event"
-            @update:description="draftForm.description = $event"
-            @update:duration="draftForm.duration = $event"
-            @update:priority="draftForm.priority = $event"
+            @update:content="draftForm.content = $event"
+            @update:tags="draftForm.tags = $event"
+            @update:status="draftForm.status = $event"
           />
         </section>
 

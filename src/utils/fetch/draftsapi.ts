@@ -8,10 +8,24 @@ export interface Draft {
     createdAt: number;
     updatedAt: number;
 }
-
+/*
+    content: z.string().optional(),
+    mediaIds: z.array(z.string()).optional(),
+    tags: z.array(z.string()).optional(),
+    status: statusSchema.optional()
+*/
+export enum DraftStatus {
+  DRAFT = 0,
+  IN_REVIEW = 1,
+  SCHEDULED = 2,
+  PUBLISHED = 3,
+  ARCHIVED = 4
+}
 export interface CreateDraftDto {
     content?: string;
     mediaIds?: string[];
+    tags?: string[];
+    status?: DraftStatus;
 }
 
 export interface UpdateDraftDto {
