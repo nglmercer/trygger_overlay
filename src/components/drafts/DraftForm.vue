@@ -1,8 +1,21 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
 import { emitter } from '@utils/Emitter';
 import { MediaEvents } from 'src/config/events';
+import DraftsApi, { type Draft, type CreateDraftDto, type UpdateDraftDto } from '@utils/fetch/draftsapi.ts';
 import MaterialVue from '@components/static/MaterialVue.vue';
+import apiConfig from 'src/config/apiConfig';
+// Props
+interface Props {
+  editingDraft?: Draft | null;
+}
+
+const props = defineProps<Props>();
+
+// Emits
+const emit = defineEmits<{
+  close: [];
+}>();
 
 // Estado para el formulario del draft
 const draftForm = reactive({
@@ -14,6 +27,51 @@ const draftForm = reactive({
 
 // Estado para los elementos multimedia seleccionados (array)
 const selectedMediaItems = ref<any[]>([]);
+const loading = ref(false);
+
+// Instancia de la API
+const draftsApi = new DraftsApi(apiConfig);
+
+// Modo de edición
+const isEditing = ref(false);
+// Función para resetear el formulario
+const resetForm = () => {
+  draftForm.title = '';
+  draftForm.description = '';
+  draftForm.duration = 30;
+  draftForm.priority = 'medium';
+  selectedMediaItems.value = [];
+};
+
+// Watch para cambios en editingDraft
+watch(() => props.editingDraft, (newDraft) => {
+  if (newDraft) {
+    // Modo edición: cargar datos del draft
+    isEditing.value = true;
+    draftForm.title = newDraft.content || '';
+    draftForm.description = ''; // El API actual no tiene description
+    draftForm.duration = 30; // Valor por defecto
+    draftForm.priority = 'medium'; // Valor por defecto
+    
+    // Cargar medios si existen los IDs
+    if (newDraft.mediaIds && newDraft.mediaIds.length > 0) {
+      // Por ahora, creamos objetos básicos con los IDs
+      // En una implementación completa, aquí se cargarían los detalles de los medios
+      selectedMediaItems.value = newDraft.mediaIds.map(id => ({
+        id,
+        name: `Elemento ${id}`,
+        type: 'unknown',
+        url: null
+      }));
+    } else {
+      selectedMediaItems.value = [];
+    }
+  } else {
+    // Modo creación: resetear formulario
+    isEditing.value = false;
+    resetForm();
+  }
+}, { immediate: true });
 
 // Función para abrir el selector de elementos (emite evento que puede ser capturado por otros componentes)
 function uploadModal() {
@@ -27,15 +85,10 @@ function uploadModal() {
   });
 }
 
-// Función para cerrar el selector y ocultar botones
-function closeSelector() {
-  emitter.emit('hide-selection-buttons', {});
-}
-
 // Función para manejar la selección de medios (array)
 const handleMediaSelection = (mediaData: any) => {
   console.log('Draft Form: Recibido elemento seleccionado:', mediaData);
-  
+
   // Verificar si el elemento ya está en el array para evitar duplicados
   const existingIndex = selectedMediaItems.value.findIndex(item => item.id === mediaData.id);
   if (existingIndex === -1) {
@@ -72,7 +125,7 @@ const clearSelection = () => {
 };
 
 // Función para enviar el formulario
-const submitDraft = () => {
+const submitDraft = async () => {
   if (selectedMediaItems.value.length === 0 || !draftForm.title) {
     emitter.emit('show-notification', {
       type: 'error',
@@ -81,34 +134,44 @@ const submitDraft = () => {
     return;
   }
 
-  const draftData = {
-    ...draftForm,
-    mediaElements: selectedMediaItems.value, // Array de elementos
-    createdAt: new Date().toISOString()
-  };
+  loading.value = true;
 
-  console.log('Enviando draft:', draftData);
-  
-  // Aquí puedes hacer la llamada a la API para guardar el draft
-  // await draftsApi.createDraft(draftData);
-  
-  emitter.emit('show-notification', {
-    type: 'success',
-    message: `Draft "${draftForm.title}" con ${selectedMediaItems.value.length} elementos creado exitosamente.`,
-  });
+  try {
+    const mediaIds = selectedMediaItems.value.map(item => item.id);
+    const draftData = {
+      content: draftForm.title,
+      mediaIds: mediaIds
+    };
 
-  // Resetear el formulario después de enviar
-  resetForm();
+    if (isEditing.value && props.editingDraft) {
+      // Modo edición
+      await draftsApi.updateDraft(props.editingDraft.id, draftData);
+      emitter.emit('show-notification', {
+        type: 'success',
+        message: `Draft "${draftForm.title}" actualizado exitosamente.`,
+      });
+    } else {
+      // Modo creación
+      await draftsApi.createDraft(draftData);
+      emitter.emit('show-notification', {
+        type: 'success',
+        message: `Draft "${draftForm.title}" con ${selectedMediaItems.value.length} elementos creado exitosamente.`,
+      });
+    }
+
+    // Cerrar el formulario después de enviar
+    emit('close');
+  } catch (error) {
+    console.error('Error al guardar draft:', error);
+    emitter.emit('show-notification', {
+      type: 'error',
+      message: `Error al ${isEditing.value ? 'actualizar' : 'crear'} el draft.`,
+    });
+  } finally {
+    loading.value = false;
+  }
 };
 
-// Función para resetear el formulario
-const resetForm = () => {
-  draftForm.title = '';
-  draftForm.description = '';
-  draftForm.duration = 30;
-  draftForm.priority = 'medium';
-  selectedMediaItems.value = [];
-};
 
 // Montar y desmontar el listener del evento
 onMounted(() => {
@@ -122,7 +185,9 @@ onUnmounted(() => {
 
 <template>
   <div class="config-modal p-6 bg-slate-800 rounded-lg">
-    <h2 class="text-2xl font-bold text-white mb-6">Crear Draft</h2>
+    <h2 class="text-2xl font-bold text-white mb-6">
+      {{ isEditing ? 'Editar Draft' : 'Crear Draft' }}
+    </h2>
     
     <form @submit.prevent="submitDraft" class="space-y-6">
       <!-- Información del draft -->
@@ -167,14 +232,6 @@ onUnmounted(() => {
             Seleccionar Elemento Multimedia
           </button>
           
-          <button 
-            type="button" 
-            @click="closeSelector"
-            class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center gap-2"
-          >
-            <MaterialVue>close</MaterialVue>
-            Cerrar Selector
-          </button>
         </div>
 
         <!-- Mostrar elementos seleccionados (array) -->
@@ -236,49 +293,16 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Configuración adicional -->
-      <div class="space-y-4">
-        <h3 class="text-lg font-semibold text-white mb-2">Configuración Adicional</h3>
-        
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Duración (segundos)
-            </label>
-            <input 
-              v-model.number="draftForm.duration"
-              type="number" 
-              min="1"
-              class="w-full px-3 py-2 bg-slate-700 text-white rounded-md border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="30"
-            />
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Prioridad
-            </label>
-            <select 
-              v-model="draftForm.priority"
-              class="w-full px-3 py-2 bg-slate-700 text-white rounded-md border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="low">Baja</option>
-              <option value="medium">Media</option>
-              <option value="high">Alta</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
       <!-- Botones de acción -->
       <div class="flex gap-3 pt-4">
         <button 
           type="submit"
-          :disabled="selectedMediaItems.length === 0 || !draftForm.title"
+          :disabled="selectedMediaItems.length === 0 || !draftForm.title || loading"
           class="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
-          <MaterialVue>save</MaterialVue>
-          Crear Draft
+          <MaterialVue v-if="!loading">save</MaterialVue>
+          <div v-else class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          {{ loading ? 'Guardando...' : (isEditing ? 'Actualizar Draft' : 'Crear Draft') }}
         </button>
         <button 
           type="button"
@@ -287,6 +311,14 @@ onUnmounted(() => {
         >
           <MaterialVue>refresh</MaterialVue>
           Limpiar Formulario
+        </button>
+        <button 
+          type="button"
+          @click="$emit('close')"
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+        >
+          <MaterialVue>close</MaterialVue>
+          Cancelar
         </button>
       </div>
     </form>

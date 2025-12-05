@@ -145,10 +145,6 @@ const DeleteMedia = async (id: string) => {
     });
   }
 };
-const checkMedia = (item: MediaItem) => {
-  selectedItem.value = item;
-//  console.log("selectedItem.value", selectedItem.value,selectedType.value);
-}
 
 const selectMediaForDraft = (item: MediaItem) => {
   // Emitir el evento de selección para drafts

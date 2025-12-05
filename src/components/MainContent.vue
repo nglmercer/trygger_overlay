@@ -5,21 +5,19 @@
     <TabContent>
       <!-- Media Gallery and Organization -->
       <template #Images>
-        <MediaGallery mediaType="image" :showSelectionButton="showSelectionButtons" />
+        <MediaGallery mediaType="image" />
       </template>
 
       <template #Videos>
-        <MediaGallery mediaType="video" :showSelectionButton="showSelectionButtons" />
+        <MediaGallery mediaType="video" />
       </template>
       
       <template #Sounds>
-        <MediaGallery mediaType="audio" :showSelectionButton="showSelectionButtons" />
+        <MediaGallery mediaType="audio" />
       </template>
       
       <template #drafts>
-        <dlg-cont ref="configModal" visible="true">
-          <DraftForm />
-        </dlg-cont>
+        <DraftsList />
       </template>
     </TabContent>
   </div>
@@ -30,28 +28,5 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { emitter } from '@utils/Emitter';
 import TabContent from '@components/content/TabContent.vue';
 import MediaGallery from './content/MediaGallery.vue';
-import DraftForm from './drafts/DraftForm.vue';
-
-// Estado para controlar la visibilidad de los botones de selección
-const showSelectionButtons = ref<boolean>(false);
-
-// Manejar eventos para mostrar/ocultar botones de selección
-const handleShowSelectionButtons = () => {
-  showSelectionButtons.value = true;
-};
-
-const handleHideSelectionButtons = () => {
-  showSelectionButtons.value = false;
-};
-
-onMounted(() => {
-  // Escuchar eventos para controlar la visibilidad
-  emitter.on('show-selection-buttons', handleShowSelectionButtons);
-  emitter.on('hide-selection-buttons', handleHideSelectionButtons);
-});
-
-onUnmounted(() => {
-  emitter.off('show-selection-buttons', handleShowSelectionButtons);
-  emitter.off('hide-selection-buttons', handleHideSelectionButtons);
-});
+import DraftsList from './drafts/DraftsList.vue';
 </script>
