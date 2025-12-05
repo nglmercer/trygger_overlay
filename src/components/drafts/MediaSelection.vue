@@ -36,7 +36,6 @@ const clearAll = () => {
 
 <template>
   <div class="space-y-4">
-    <h3 class="text-lg font-semibold text-white">Elementos Multimedia</h3>
     
     <!-- Botón de selección -->
     <div class="flex flex-col sm:flex-row gap-2">
@@ -51,7 +50,7 @@ const clearAll = () => {
     </div>
 
     <!-- Mostrar elementos seleccionados -->
-    <div v-if="selectedMediaItems.length > 0" class="p-4 bg-green-900/30 border border-green-500/50 rounded-lg">
+    <div v-if="selectedMediaItems.length > 0" class="rounded-lg">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
         <h4 class="text-sm font-semibold text-green-300">
           Elementos Seleccionados ({{ selectedMediaItems.length }}):
@@ -67,7 +66,7 @@ const clearAll = () => {
       </div>
       
       <!-- Grid de elementos seleccionados -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-2">
+      <div class="grid gap-3 max-h-96 overflow-auto pr-2">
         <MediaItemCard 
           v-for="(item, index) in selectedMediaItems" 
           :key="item.id" 
@@ -81,7 +80,7 @@ const clearAll = () => {
     <!-- Mensaje cuando no hay selección -->
     <div v-else class="p-6 bg-gray-900/30 border border-gray-600/50 rounded-lg text-center">
       <div class="flex flex-col items-center gap-3">
-        <MaterialVue class="text-4xl text-gray-500">media_library</MaterialVue>
+        <MaterialVue class="text-4xl text-gray-500">perm_media</MaterialVue>
         <p class="text-gray-400 text-sm sm:text-base">
           No hay elementos multimedia seleccionados.
         </p>

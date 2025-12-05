@@ -193,17 +193,7 @@ onUnmounted(() => {
 
 <template>
   <div class="draft-form-container">
-    <div class="config-modal p-4 sm:p-6 bg-slate-800 rounded-lg shadow-xl">
-      <!-- Header -->
-      <header class="mb-6">
-        <h2 class="text-xl sm:text-2xl font-bold text-white">
-          {{ isEditing ? 'Editar Draft' : 'Crear Draft' }}
-        </h2>
-        <p class="text-gray-400 text-sm mt-1">
-          {{ isEditing ? 'Modifica los datos de tu draft existente' : 'Crea un nuevo draft con elementos multimedia' }}
-        </p>
-      </header>
-      
+    <div class="p-4 sm:p-6 bg-slate-800 rounded-lg shadow-xl">
       <!-- Form -->
       <form @submit.prevent="submitDraft" class="space-y-6">
         <!-- Sección de información del draft -->
@@ -235,22 +225,9 @@ onUnmounted(() => {
           />
         </section>
 
-        <!-- Resumen y acciones -->
+        <!-- acciones -->
         <section class="border-t border-slate-700 pt-6">
-          <!-- Resumen del draft -->
-          <div class="mb-4 p-4 bg-slate-700/30 rounded-lg">
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Resumen del Draft:</h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-              <div>
-                <span class="text-gray-400">Título:</span>
-                <span class="text-white ml-2">{{ draftForm.title || 'No especificado' }}</span>
-              </div>
-              <div>
-                <span class="text-gray-400">Elementos:</span>
-                <span class="text-white ml-2">{{ selectedMediaItems.length }} seleccionados</span>
-              </div>
-            </div>
-          </div>
+
 
           <!-- Botones de acción -->
           <FormActions 
