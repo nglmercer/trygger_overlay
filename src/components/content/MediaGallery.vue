@@ -26,7 +26,7 @@
                     <PreviewSrc v-if="(item.type === 'image' || item.type === 'audio' || item.type === 'video') && item.url" :item="item" :getFullImageUrl="getFullImageUrl" 
                         />
                         <MaterialVue v-else class="text-5xl text-slate-500">help_outline</MaterialVue>
-                        <MaterialVue v-if="item.url" @click="selectMediaForDraft(item)" :opticalSize="24" class="bg-blue-600 absolute top-4 right-4 rounded-2xl flex items-center justify-center p-2 hover:scale-125 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <MaterialVue v-if="item.url && props.showSelectionButton" @click="selectMediaForDraft(item)" :opticalSize="24" class="bg-blue-600 absolute top-4 right-4 rounded-2xl flex items-center justify-center p-2 hover:scale-125 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           check
                         </MaterialVue>
                   </div>
@@ -57,12 +57,14 @@ import MaterialVue from '@components/static/MaterialVue.vue';
 import PreviewSrc from './Preview-src.vue';
 import {apiConfig} from '@utils/fetch/fetchapi';
 // --- PROPS: Entradas del componente, controladas por el padre ---
-interface Props {
+  interface Props {
   mediaType: MediaType;
   imageBaseUrl?: string;
+  showSelectionButton?: boolean; // Control externo para mostrar/ocultar el botón de selección
 }
 const props = withDefaults(defineProps<Props>(), {
   imageBaseUrl: apiConfig.getFullUrl(), // Por defecto, no hay base. El padre debería proveerla.
+  showSelectionButton: true, // Por defecto, mostrar el botón
 });
 
 // --- EMITS: Eventos que el componente envía al padre ---

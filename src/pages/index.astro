@@ -20,7 +20,7 @@ const absoluteRight4 = "absolute right-4"
 	<ConfigApi client:only="vue"/>
 
 	<dlg-cont class="upload_modal">
-		<Upload client:only="vue" />
+		<Upload client:only="vue" @close-modal={}/>
 	</dlg-cont>
 	<dlg-cont class="link_modal" style="position:absolute">
 		<div class="p-6 flex flex-col gap-4 bg-gray-800 rounded-md shadow-md">
@@ -67,8 +67,8 @@ const absoluteRight4 = "absolute right-4"
 		const LinkUrl = window.location.href + 'widget';
 		linkInput.value = LinkUrl;
 		const copyBtn = document.querySelector('#copyBtn') as HTMLButtonElement;
-		emitter.on("openSelectElements",(e) =>{
-			uploadModal.show();
+		emitter.on("uploadModal",(show=true) =>{
+			show ? uploadModal.show() : uploadModal.hide();
 		})
 		copyBtn.addEventListener('click', async () => {
 			try {

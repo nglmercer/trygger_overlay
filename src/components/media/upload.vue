@@ -25,17 +25,13 @@ const tabsType: Record<Exclude<Tab, 'Upload'>, MediaType> = {
   'Subtitles': 'subtitle'
 };
 
-const mediaTypeToTab: Record<MediaType, Tab> = {
-  'image': 'Images',
-  'video': 'Videos',
-  'audio': 'Sounds',
-  'subtitle': 'Subtitles'
-};
-
 const activeTab = ref<Tab>('Images');
 const viewMode = ref<ViewMode>('grid');
 const mediaItems = ref<any[]>([]);
-
+function closeModal(){
+  console.log("closeModal")
+  emitter.emit('uploadModal',false)
+}
 
 // Watch for changes in activeTab and fetch corresponding media
 watch(
@@ -70,6 +66,7 @@ const handleSearch = (query: string) => {
           <button 
             class="p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 absolute top-4 right-4" 
             aria-label="Close"
+            @click=closeModal
           >
             <span class="material-symbols-outlined">close</span>
           </button>

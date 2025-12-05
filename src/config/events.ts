@@ -1,5 +1,6 @@
 const MediaEvents = {
   selectedMedia: 'MediaGallery:selectedMedia',
+  selectedMediaArray: 'MediaGallery:selectedMediaArray',
   Upload: 'MediaGallery:upload',
   CreateDraft: 'MediaGallery:createDraft',
   EditDraft: 'MediaGallery:editDraft',
