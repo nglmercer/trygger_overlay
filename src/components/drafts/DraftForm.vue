@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, watch, computed } from 'vue';
 import { emitter } from '@utils/Emitter';
 import { MediaEvents } from 'src/config/events';
 import DraftsApi, { type Draft, type CreateDraftDto, type UpdateDraftDto } from '@utils/fetch/draftsapi.ts';
-import MaterialVue from '@components/static/MaterialVue.vue';
 import apiConfig from 'src/config/apiConfig';
+import DraftFormFields from './DraftFormFields.vue';
+import MediaSelection from './MediaSelection.vue';
+import FormActions from './FormActions.vue';
+
 // Props
 interface Props {
   editingDraft?: Draft | null;
@@ -34,6 +37,7 @@ const draftsApi = new DraftsApi(apiConfig);
 
 // Modo de edición
 const isEditing = ref(false);
+
 // Función para resetear el formulario
 const resetForm = () => {
   draftForm.title = '';
@@ -172,6 +176,10 @@ const submitDraft = async () => {
   }
 };
 
+// Computed properties para validación
+const canSubmit = computed(() => {
+  return selectedMediaItems.value.length > 0 && draftForm.title.trim() !== '';
+});
 
 // Montar y desmontar el listener del evento
 onMounted(() => {
@@ -184,150 +192,152 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="config-modal p-6 bg-slate-800 rounded-lg">
-    <h2 class="text-2xl font-bold text-white mb-6">
-      {{ isEditing ? 'Editar Draft' : 'Crear Draft' }}
-    </h2>
-    
-    <form @submit.prevent="submitDraft" class="space-y-6">
-      <!-- Información del draft -->
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">
-            Título del Draft
-          </label>
-          <input 
-            v-model="draftForm.title"
-            type="text" 
-            class="w-full px-3 py-2 bg-slate-700 text-white rounded-md border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            placeholder="Ingresa un título para tu draft"
+  <div class="draft-form-container">
+    <div class="config-modal p-4 sm:p-6 bg-slate-800 rounded-lg shadow-xl">
+      <!-- Header -->
+      <header class="mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold text-white">
+          {{ isEditing ? 'Editar Draft' : 'Crear Draft' }}
+        </h2>
+        <p class="text-gray-400 text-sm mt-1">
+          {{ isEditing ? 'Modifica los datos de tu draft existente' : 'Crea un nuevo draft con elementos multimedia' }}
+        </p>
+      </header>
+      
+      <!-- Form -->
+      <form @submit.prevent="submitDraft" class="space-y-6">
+        <!-- Sección de información del draft -->
+        <section class="space-y-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-1 h-5 bg-blue-500 rounded-full"></span>
+            Información del Draft
+          </h3>
+          <DraftFormFields 
+            :form-data="draftForm"
+            @update:title="draftForm.title = $event"
+            @update:description="draftForm.description = $event"
+            @update:duration="draftForm.duration = $event"
+            @update:priority="draftForm.priority = $event"
           />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">
-            Descripción
-          </label>
-          <textarea 
-            v-model="draftForm.description"
-            rows="3"
-            class="w-full px-3 py-2 bg-slate-700 text-white rounded-md border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            placeholder="Describe el contenido de tu draft"
-          ></textarea>
-        </div>
-      </div>
+        </section>
 
-      <!-- Selección de Media -->
-      <div class="space-y-4">
-        <h3 class="text-lg font-semibold text-white mb-2">Elemento Multimedia</h3>
-        
-        <!-- Botones de selección -->
-        <div class="flex gap-2">
-          <button 
-            type="button" 
-            @click="uploadModal"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <MaterialVue>add</MaterialVue>
-            Seleccionar Elemento Multimedia
-          </button>
-          
-        </div>
+        <!-- Sección de selección de media -->
+        <section class="space-y-4">
+          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-1 h-5 bg-green-500 rounded-full"></span>
+            Contenido Multimedia
+          </h3>
+          <MediaSelection 
+            :selected-media-items="selectedMediaItems"
+            @open-selector="uploadModal"
+            @remove-item="removeMediaItem"
+            @clear-all="clearSelection"
+          />
+        </section>
 
-        <!-- Mostrar elementos seleccionados (array) -->
-        <div v-if="selectedMediaItems.length > 0" class="p-4 bg-green-900/30 border border-green-500/50 rounded-lg">
-          <h4 class="text-sm font-semibold text-green-300 mb-2">Elementos Seleccionados ({{ selectedMediaItems.length }}):</h4>
-          
-          <!-- Lista de elementos seleccionados -->
-          <div class="space-y-2 max-h-60 overflow-y-auto">
-            <div v-for="(item, index) in selectedMediaItems" :key="item.id" 
-                 class="p-2 bg-slate-700/50 rounded border border-slate-600">
-              <div class="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span class="text-gray-400">ID:</span>
-                  <span class="text-white ml-2">{{ item.id }}</span>
-                </div>
-                <div>
-                  <span class="text-gray-400">Nombre:</span>
-                  <span class="text-white ml-2">{{ item.name }}</span>
-                </div>
-                <div>
-                  <span class="text-gray-400">Tipo:</span>
-                  <span class="text-white ml-2 capitalize">{{ item.type }}</span>
-                </div>
-                <div>
-                  <span class="text-gray-400">URL:</span>
-                  <a v-if="item.url" :href="item.url" target="_blank" class="text-blue-400 ml-2 hover:underline">
-                    Ver archivo
-                  </a>
-                </div>
+        <!-- Resumen y acciones -->
+        <section class="border-t border-slate-700 pt-6">
+          <!-- Resumen del draft -->
+          <div class="mb-4 p-4 bg-slate-700/30 rounded-lg">
+            <h4 class="text-sm font-semibold text-gray-300 mb-2">Resumen del Draft:</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+              <div>
+                <span class="text-gray-400">Título:</span>
+                <span class="text-white ml-2">{{ draftForm.title || 'No especificado' }}</span>
               </div>
-              <!-- Botón para eliminar elemento individual -->
-              <button 
-                type="button"
-                @click="removeMediaItem(index)"
-                class="mt-2 px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors flex items-center gap-1"
-              >
-                <MaterialVue>delete</MaterialVue>
-                Eliminar este elemento
-              </button>
+              <div>
+                <span class="text-gray-400">Elementos:</span>
+                <span class="text-white ml-2">{{ selectedMediaItems.length }} seleccionados</span>
+              </div>
             </div>
           </div>
-          
-          <!-- Botón para limpiar toda la selección -->
-          <button 
-            type="button"
-            @click="clearSelection"
-            class="mt-3 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors flex items-center gap-2"
-          >
-            <MaterialVue>clear_all</MaterialVue>
-            Eliminar todos los elementos
-          </button>
-        </div>
 
-        <!-- Mensaje cuando no hay selección -->
-        <div v-else class="p-4 bg-gray-900/30 border border-gray-600/50 rounded-lg text-center">
-          <p class="text-gray-400 text-sm">
-            No hay elementos multimedia seleccionados. Haz clic en el botón de arriba para seleccionar uno o más elementos.
-          </p>
-        </div>
-      </div>
-
-      <!-- Botones de acción -->
-      <div class="flex gap-3 pt-4">
-        <button 
-          type="submit"
-          :disabled="selectedMediaItems.length === 0 || !draftForm.title || loading"
-          class="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-        >
-          <MaterialVue v-if="!loading">save</MaterialVue>
-          <div v-else class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          {{ loading ? 'Guardando...' : (isEditing ? 'Actualizar Draft' : 'Crear Draft') }}
-        </button>
-        <button 
-          type="button"
-          @click="resetForm"
-          class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center gap-2"
-        >
-          <MaterialVue>refresh</MaterialVue>
-          Limpiar Formulario
-        </button>
-        <button 
-          type="button"
-          @click="$emit('close')"
-          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
-        >
-          <MaterialVue>close</MaterialVue>
-          Cancelar
-        </button>
-      </div>
-    </form>
+          <!-- Botones de acción -->
+          <FormActions 
+            :is-editing="isEditing"
+            :loading="loading"
+            :can-submit="canSubmit"
+            :selected-media-count="selectedMediaItems.length"
+            @submit="submitDraft"
+            @reset="resetForm"
+            @close="$emit('close')"
+          />
+        </section>
+      </form>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.draft-form-container {
+  width: 100%;
+  max-width: 100%;
+}
+
 .config-modal {
-  min-width: 600px;
-  max-width: 800px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .config-modal {
+    margin: 0 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .config-modal {
+    margin: 0;
+    max-width: 100vw;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .config-modal {
+    min-width: 800px;
+  }
+}
+
+/* Smooth transitions */
+section {
+  transition: all 0.3s ease;
+}
+
+/* Focus states */
+form:focus-within {
+  outline: none;
+}
+
+/* Custom scrollbar for modal */
+.config-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.config-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.config-modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.config-modal::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.config-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
 }
 </style>

@@ -7,7 +7,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-
+import { mediaApi } from '@utils/fetch/fetchapi'
 const totalStorage = 524288000 // 500MB in bytes
 const usedStorage = ref(0)
 
@@ -25,4 +25,8 @@ function formatBytes(bytes) {
 
 // Example: Update used storage (you can modify this value as needed)
 usedStorage.value = 1024 * 1024 // 1MB
+const stats = await mediaApi.getStats()
+if (stats){
+    usedStorage.value = stats.total
+}
 </script>

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import SearchInput from '@components/media/SearchInput.vue';
-import SortDropdown from '@components/media/SortDropdown.vue';
-import ViewToggle from '@components/media/ViewToggle.vue';
 import UsageStats from '@components/media/UsageStats.vue';  
 import EmptyState from '@components/media/EmptyState.vue';
 import UploadTab from '@components/media/UploadTab.vue';
@@ -10,7 +8,6 @@ import MediaGallery from '@components/content/MediaGallery.vue';
 import { mediaApi, type MediaType } from '@utils/fetch/fetchapi.ts';
 import { emitter } from '@utils/Emitter';
 import type { Tab } from '@components/types';
-type ViewMode = 'grid' | 'list';
 
 const TABS: { id: Tab; icon: string }[] = [
   { id: 'Images', icon: 'photo_library' },
@@ -26,7 +23,6 @@ const tabsType: Record<Exclude<Tab, 'Upload'>, MediaType> = {
 };
 
 const activeTab = ref<Tab>('Images');
-const viewMode = ref<ViewMode>('grid');
 const mediaItems = ref<any[]>([]);
 function closeModal(){
   console.log("closeModal")
@@ -72,8 +68,6 @@ const handleSearch = (query: string) => {
           </button>
         <div class="flex sm:flex-nowrap flex-wrap items-center space-x-4"> 
           <SearchInput @search="handleSearch" />
-          <SortDropdown />
-          <ViewToggle v-model:viewMode="viewMode" />
         </div>
         <div class="hidden md:block flex-1"></div>
         <div class="flex items-center gap-4 mx-6">

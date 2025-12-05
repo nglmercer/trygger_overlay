@@ -21,7 +21,6 @@ src/
 │   ├── media/            # Componentes de gestión de medios
 │   │   ├── upload.vue
 │   │   ├── SearchInput.vue
-│   │   ├── SortDropdown.vue
 │   │   └── ViewToggle.vue
 │   ├── widget/           # Componentes del reproductor
 │   │   ├── MediaPlayer.vue
