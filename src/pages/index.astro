@@ -58,22 +58,25 @@ const absoluteRight4 = "absolute right-4"
 		const addMediaElement = document.querySelector('#addMediaElement') as HTMLButtonElement;
 		const linkTrigger = document.querySelector('#LinkTrigger') as HTMLButtonElement;
 		const triggerOptions = document.querySelector('#TriggerOptions') as HTMLSelectElement;
-		if (!addMediaElement || !linkTrigger) return;
+		const uploadModal = document.querySelector('.upload_modal') as DlgCont;
+		if (!addMediaElement || !linkTrigger|| !uploadModal) return;
 		addMediaElement.addEventListener('click', async () => {
-			const uploadModal = document.querySelector('.upload_modal') as DlgCont;
 			uploadModal.show();
 		})
 		const linkInput = document.querySelector('#linkInput') as HTMLInputElement;
 		const LinkUrl = window.location.href + 'widget';
 		linkInput.value = LinkUrl;
 		const copyBtn = document.querySelector('#copyBtn') as HTMLButtonElement;
+		emitter.on("openSelectElements",(e) =>{
+			uploadModal.show();
+		})
 		copyBtn.addEventListener('click', async () => {
 			try {
 				await navigator.clipboard.writeText(linkInput.value);
-				emitter.emit(Notifications.addNotification,{
+/* 				emitter.emit(Notifications.addNotification,{
 					message: 'Link copied to clipboard',
 					type: 'success',
-				})
+				}) */
 			} catch (err) {
 				// Fallback for older browsers
 				linkInput.select();
@@ -89,14 +92,13 @@ const absoluteRight4 = "absolute right-4"
 		const testBtn = document.querySelector('#testBtn') as HTMLButtonElement;
 
 		testBtn?.addEventListener('click', () => {
-			emitter.emit(TriggerEvents.Test,{
-				triggerId: triggerOptions?.value,
-			});
+
+			/*
 			wsClient.send(JSON.stringify({
 				event: 'TriggerEvents:ID',
 				data: triggerOptions?.value,
 			}))
-/* 			broadcastChannel.postMessage({
+ 			broadcastChannel.postMessage({
 				event: TriggerEvents.Test,
 				data: {
 					triggerId: triggerOptions?.value,

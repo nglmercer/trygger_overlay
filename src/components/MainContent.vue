@@ -5,15 +5,21 @@
     <TabContent>
       <!-- Media Gallery and Organization -->
       <template #Images>
-        <MediaElements mediaType="image" />
+        <MediaGallery mediaType="image" />
       </template>
 
       <template #Videos>
-        <MediaElements mediaType="video" />
+        <MediaGallery mediaType="video" />
       </template>
       
       <template #Sounds>
-        <MediaElements mediaType="audio" />
+        <MediaGallery mediaType="audio" />
+      </template>
+      
+      <template #drafts>
+        <dlg-cont ref="configModal" visible="true">
+          <DraftForm />
+        </dlg-cont>
       </template>
     </TabContent>
   </div>
@@ -21,5 +27,6 @@
 
 <script setup lang="ts">
 import TabContent from '@components/content/TabContent.vue';
-import MediaElements from '@components/content/MediaElements.vue';
+import MediaGallery from './content/MediaGallery.vue';
+import DraftForm from './drafts/DraftForm.vue';
 </script>

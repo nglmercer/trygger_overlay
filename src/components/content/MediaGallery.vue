@@ -26,7 +26,7 @@
                     <PreviewSrc v-if="(item.type === 'image' || item.type === 'audio' || item.type === 'video') && item.url" :item="item" :getFullImageUrl="getFullImageUrl" 
                         />
                         <MaterialVue v-else class="text-5xl text-slate-500">help_outline</MaterialVue>
-                        <MaterialVue v-if="(item.type === selectedType) && item.url" @click="checkMedia(item)" :opticalSize="24" class="bg-blue-600 absolute top-4 right-4 rounded-2xl flex items-center justify-center p-2 hover:scale-125">
+                        <MaterialVue v-if="item.url" @click="selectMediaForDraft(item)" :opticalSize="24" class="bg-blue-600 absolute top-4 right-4 rounded-2xl flex items-center justify-center p-2 hover:scale-125 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           check
                         </MaterialVue>
                   </div>
@@ -51,6 +51,7 @@
 import { ref, watch  } from 'vue';
 import { mediaApi } from '@utils/fetch/fetchapi';
 import { emitter } from '@utils/Emitter';
+import { MediaEvents } from 'src/config/events';
 import type { MediaItem, MediaType } from '@utils/fetch/fetchapi';
 import MaterialVue from '@components/static/MaterialVue.vue';
 import PreviewSrc from './Preview-src.vue';
@@ -145,8 +146,22 @@ const DeleteMedia = async (id: string) => {
 const checkMedia = (item: MediaItem) => {
   selectedItem.value = item;
 //  console.log("selectedItem.value", selectedItem.value,selectedType.value);
-
 }
+
+const selectMediaForDraft = (item: MediaItem) => {
+  // Emitir el evento de selección para drafts
+  emitter.emit(MediaEvents.selectedMedia, {
+    id: item.id,
+    name: item.name,
+    type: item.type,
+    url: item.url || ''
+  });
+  
+  emitter.emit('show-notification', {
+    type: 'success',
+    message: `Elemento "${item.name}" seleccionado para drafts.`,
+  });
+};
 
 // --- REACTIVIDAD ---
 // Observamos cambios en la prop `mediaType`. Cuando el padre la cambia,

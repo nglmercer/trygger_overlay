@@ -16,7 +16,6 @@ Herramienta para organizar elementos multimedia y crear drafts para publicacione
 src/
 ├── components/
 │   ├── content/           # Componentes de contenido multimedia
-│   │   ├── MediaElements.vue
 │   │   ├── MediaGallery.vue
 │   │   └── TabContent.vue
 │   ├── media/            # Componentes de gestión de medios
