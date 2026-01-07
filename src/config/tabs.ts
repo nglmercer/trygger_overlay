@@ -2,14 +2,14 @@
 
 // 1. Definición de las pestañas que se mostrarán en la UI.
 // La propiedad 'active' aquí solo sirve para definir el estado inicial por defecto.
-const tabsNames = ['Images', 'Videos', 'Sounds', 'Groups'] as const;
+const tabsNames = ['Images', 'Videos', 'Sounds', 'drafts'] as const;
 export type TabName = typeof tabsNames[number];
 
 export const tabs = [
   { label: "Images", active: true },
   { label: "Videos", active: false },
   { label: "Sounds", active: false },
-  { label: "Groups", active: false },
+  { label: "drafts", active: false },
 ] as const;
 
 export interface EmptyStateConfig {
@@ -46,9 +46,9 @@ export const emptyStateConfig: EmptyStateConfigKeys = {
     buttonText: 'Upload sound',
     buttonIcon: 'upload_file',
   },
-  Groups: {
+  drafts: {
     icon: 'group',
-    title: 'No groups found',
+    title: 'No drafts found',
     description: 'Upload your first group to get started',
     buttonText: 'Upload group',
     buttonIcon: 'upload_file',
@@ -76,5 +76,5 @@ export const typeToTabNameMap: Record<string, TabName> = {
   'image': 'Images',
   'video': 'Videos',
   'audio': 'Sounds',
-  'groups': 'Groups',
+  'drafts': 'drafts',
 };

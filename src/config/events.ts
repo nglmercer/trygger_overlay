@@ -1,16 +1,13 @@
-const TriggerEvents = {
-  SelectFile: 'TriggerForm:selectFile',
-  Submit: 'TriggerForm:submit',
-  FormType: 'TriggerForm:formType',
-  setForm: 'TriggerForm:setForm',
-  Add: 'TriggerForm:add',
-  Test: 'TriggerForm:test',
-}
 const MediaEvents = {
   selectedMedia: 'MediaGallery:selectedMedia',
+  selectedMediaArray: 'MediaGallery:selectedMediaArray',
   Upload: 'MediaGallery:upload',
+  CreateDraft: 'MediaGallery:createDraft',
+  EditDraft: 'MediaGallery:editDraft',
+  DeleteDraft: 'MediaGallery:deleteDraft',
 }
 const Notifications = {
   addNotification: 'show-notification'
 }
-export {TriggerEvents,MediaEvents,Notifications}
+
+export {MediaEvents, Notifications}

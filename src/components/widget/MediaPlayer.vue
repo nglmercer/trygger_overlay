@@ -1,303 +1,329 @@
-<!-- Fixed MediaPlayer.vue -->
+<!-- MediaPlayer.vue for Media Organization -->
 <template>
-  <div class="widget-container" ref="containerRef">
-    <!-- Media Display Component -->
-    <MediaDisplay 
-      :current-item="currentItem"
-      :url-base="urlBase"
-      @video-loaded="onVideoLoaded"
-      @video-ended="onVideoEnded"
-      @image-loaded="onImageLoaded"
-      @audio-loaded="onAudioLoaded"
-      @audio-ended="onAudioEnded"
-      @media-error="onMediaError"
-    />
+  <div class="media-player-container" ref="containerRef">
+    <!-- Media Gallery View -->
+    <div v-if="viewMode === 'gallery'" class="gallery-view">
+      <div class="media-tabs">
+        <button 
+          v-for="type in mediaTypes" 
+          :key="type"
+          @click="selectedMediaType = type"
+          :class="['tab-btn', { active: selectedMediaType === type }]"
+        >
+          {{ type.charAt(0).toUpperCase() + type.slice(1) }}
+        </button>
+      </div>
+      
+      <MediaGallery 
+        :media-type="selectedMediaType"
+        :image-base-url="urlBase"
+        @loaded="onMediaLoaded"
+        @error="onMediaError"
+      />
+      
+      <!-- Drafts Section -->
+      <div class="drafts-section">
+        <h3>Drafts</h3>
+        <div class="drafts-grid">
+          <div 
+            v-for="draft in drafts" 
+            :key="draft.id"
+            class="draft-card"
+            @click="loadDraft(draft)"
+          >
+            <h4>{{ draft.name }}</h4>
+            <p>{{ draft.description || 'No description' }}</p>
+            <div class="draft-actions">
+              <button @click.stop="editDraft(draft)" class="edit-btn">Edit</button>
+              <button @click.stop="deleteDraft(draft.id)" class="delete-btn">Delete</button>
+            </div>
+          </div>
+        </div>
+        
+        <button @click="createNewDraft" class="create-draft-btn">
+          + Create New Draft
+        </button>
+      </div>
+    </div>
 
-    <!-- Media Info Overlay (always visible) -->
-    <MediaInfo 
-      v-if="currentItem"
-      :current-item="currentItem"
-      :current-index="currentIndex"
-      :queue-length="queue.length"
-    />
+    <!-- Media Player View -->
+    <div v-else-if="viewMode === 'player'" class="player-view">
+      <MediaDisplay 
+        :current-item="currentMedia"
+        :url-base="urlBase"
+        @video-loaded="onVideoLoaded"
+        @video-ended="onVideoEnded"
+        @image-loaded="onImageLoaded"
+        @audio-loaded="onAudioLoaded"
+        @audio-ended="onAudioEnded"
+        @media-error="onMediaError"
+      />
 
-    <!-- Development Mode Controls -->
-    <MediaControls
-      v-if="isDevelopmentMode"
-      :queue-length="queue.length"
-      :is-playing="isPlaying"
-      @previous="previousItem"
-      @toggle-play-pause="togglePlayPause"
-      @next="nextItem"
-      @clear-queue="clearQueue"
-    />
+      <!-- Media Info Overlay -->
+      <MediaInfo 
+        v-if="currentMedia"
+        :current-item="currentMedia"
+        :current-index="currentIndex"
+        :queue-length="playQueue.length"
+      />
 
-    <!-- Development Mode Stats -->
-    <MediaStats
-      v-if="isDevelopmentMode"
-      :queue-length="queue.length"
-      :current-item="currentItem"
-      :time-remaining="timeRemaining"
-    />
+      <!-- Media Controls -->
+      <MediaControls
+        :queue-length="playQueue.length"
+        :is-playing="isPlaying"
+        @previous="previousItem"
+        @toggle-play-pause="togglePlayPause"
+        @next="nextItem"
+        @clear-queue="clearQueue"
+      />
 
-    <!-- Development Mode Toggle -->
-    <DevModeToggle 
-      v-model="isDevelopmentMode"
-    />
+      <!-- Development Mode Stats -->
+      <MediaStats
+        v-if="isDevelopmentMode"
+        :queue-length="playQueue.length"
+        :current-item="currentMedia"
+        :time-remaining="timeRemaining"
+      />
+    </div>
+
+    <!-- View Mode Toggle -->
+    <div class="view-controls">
+      <button 
+        @click="toggleViewMode"
+        class="view-toggle-btn"
+        :class="{ 'player-mode': viewMode === 'player' }"
+      >
+        {{ viewMode === 'gallery' ? '📺 Player' : '🖼️ Gallery' }}
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import MediaDisplay from '../widget/MediaDisplay.vue';
-import MediaInfo from '../widget/MediaInfo.vue';
-import MediaControls from '../widget/MediaControls.vue';
-import MediaStats from '../widget/MediaStats.vue';
-import DevModeToggle from '../widget/DevModeToggle.vue';
-import { initializePositionPool, getRandomPosition, updatePositionPool, type Position } from './positionUtils';
-import { triggerApi,transformTriggersToArray,type TriggerItem } from '@utils/fetch/fetchapi';
-import WebSocketClient,{ handlers} from '@utils/ws';
-import { TriggerEvents } from 'src/config/events';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import MediaGallery from '@components/content/MediaGallery.vue';
+import MediaDisplay from './MediaDisplay.vue';
+import MediaInfo from './MediaInfo.vue';
+import MediaControls from './MediaControls.vue';
+import MediaStats from './MediaStats.vue';
+import MediaApi, { type MediaRecord } from '@utils/fetch/fetchapi';
+import { MediaEvents } from 'src/config/events';
 import { emitter } from '@utils/Emitter';
-import broadcastChannel from '@utils/brodcast';
-import { apiConfig } from '@utils/fetch/config/apiConfig';
-import { urlConfigHandler, applyURLConfig } from '@utils/fetch/config/urlConfigHandler';
+
+// Types
+interface MediaDraft {
+  id: string;
+  name: string;
+  description?: string;
+  mediaItems: MediaRecord[];
+  createdAt: Date;
+  updatedAt: Date;
+  isDraft: true;
+}
+
+interface ExtendedMediaItem extends MediaRecord {
+  isDraft?: boolean;
+  draftInfo?: MediaDraft;
+}
+
 // Props and Emits
 const emit = defineEmits<{
-  itemStarted: [item: TriggerItem];
-  itemEnded: [item: TriggerItem];
-  queueEmpty: [];
-  queueUpdated: [queue: TriggerItem[]];
+  mediaSelected: [media: MediaRecord];
+  draftCreated: [draft: MediaDraft];
+  draftUpdated: [draft: MediaDraft];
+  draftDeleted: [draftId: string];
 }>();
 
 // Refs
 const containerRef = ref<HTMLElement | null>(null);
+const api = new MediaApi({} as any); // Will be initialized with proper config
 
 // State
-const urlBase = apiConfig.getFullUrl();
-const queue = ref<TriggerItem[]>([]);
-const currentIndex = ref(-1); // Start with -1 to indicate no item is playing
+const urlBase = ref('');
+const viewMode = ref<'gallery' | 'player'>('gallery');
+const mediaItems = ref<MediaRecord[]>([]);
+const drafts = ref<MediaDraft[]>([]);
+const playQueue = ref<ExtendedMediaItem[]>([]);
+const currentMedia = ref<ExtendedMediaItem | null>(null);
+const currentIndex = ref(-1);
 const isPlaying = ref(false);
 const timeRemaining = ref(0);
 const isDevelopmentMode = ref(false);
-const isInitialized = ref(false);
-const savedStoreTriggers = ref<TriggerItem[]>([]);
-const playedItems = ref<Set<string>>(new Set()); // Track de items reproducidos
+const selectedMediaType = ref<'image' | 'video' | 'audio'>('image');
+const mediaTypes = ['image', 'video', 'audio'] as const;
 let durationTimer: NodeJS.Timeout | null = null;
-handlers.onMessage = (rawData) => {
-  const {data,event} = typeof rawData.data === 'string' ? JSON.parse(rawData.data) : rawData.data;
-  console.log('Received message:', data,event);
-  if (event === TriggerEvents.Test || event === 'TriggerEvents:ID') {
-    TriggerProcces(data)
-  }
-}
-const urlFromParams = new URLSearchParams(window.location.search);
-console.log("urlFromParams.get('ws')", urlFromParams.get('ws'));
-
-if (urlFromParams.get('ws')) {
-  // Instead of manual parsing, use the handler
-  const wsValue = urlFromParams.get('ws');
-  console.log('Processing WebSocket URL:', wsValue);
-  
-  // Option 1: Use the handler (recommended)
-  const changed = urlConfigHandler.applyFromURL();
-  if (changed) {
-    console.log('WebSocket configuration applied:', apiConfig.getFullUrl());
-  }
-}
-const ws = new WebSocketClient(apiConfig.getWsUrl(),handlers);
-
-// Sample data
-const sampleQueue: TriggerItem[] = [
-/*   {
-    name: "Sample Video",
-    duration: 10,
-    maxDuration: false,
-    active: false,
-    item: {
-      id: "dcb954e2-a6f2-46f8-b296-4f50bd6cdd00",
-      name: "Guayando.mp4",
-      type: "video",
-      url: "/uploads/videos/dcb954e2-a6f2-46f8-b296-4f50bd6cdd00.mp4",
-      metadata: {
-        size: 2110113,
-        type: "video/mp4"
-      }
-    },
-    type: "video",
-    size: 50,
-    volume: 50,
-    position: { x: 0, y: 0 },
-    randomPosition: true,
-    id: "e12964c2-3d4d-431d-b077-bb51a6ed1e15"
-  }, 
-  {
-    name: "Sample Image",
-    duration: 5,
-    maxDuration: false,
-    active: false,
-    item: {
-      id: "326bd326-3142-4066-8842-d750b9001a28",
-      name: "128845117.png",
-      type: "image",
-      url: "https://picsum.photos/800/600",
-      metadata: {
-        "size": 270566,
-        "type": "image/png"
-      }
-    },
-    type: "image",
-    size: 40,
-    volume: 0,
-    position: { x: 10, y: 10 },
-    randomPosition: true,
-    id: "img-widget-001"
-  }
-  */
-];
 
 // Computed
-const currentItem = computed(() => 
-  queue.value.length > 0 && currentIndex.value >= 0 && currentIndex.value < queue.value.length 
-    ? queue.value[currentIndex.value] 
-    : null
-);
+const hasMedia = computed(() => mediaItems.value.length > 0);
 
-// Position management
-const assignRandomPosition = (item: TriggerItem) => {
-  if (item.randomPosition && containerRef.value) {
-    const containerRect = containerRef.value.getBoundingClientRect();
-    const newPosition = getRandomPosition();
-    item.position = newPosition;
+// View Management
+const toggleViewMode = () => {
+  viewMode.value = viewMode.value === 'gallery' ? 'player' : 'gallery';
+};
+
+// Media Management
+const loadMediaItems = async () => {
+  try {
+    const allMedia = await api.getAllMedia();
+    mediaItems.value = Object.values(allMedia);
+  } catch (error) {
+    console.error('Error loading media items:', error);
   }
 };
 
-const initializePositions = async () => {
-  if (!containerRef.value) return;
-  
-  await nextTick();
-  const containerRect = containerRef.value.getBoundingClientRect();
-  
-  if (containerRect.width > 0 && containerRect.height > 0) {
-    initializePositionPool();
-    
-    // Assign positions to existing queue items
-    queue.value.forEach(item => {
-      if (item.randomPosition) {
-        assignRandomPosition(item);
-      }
-    });
-    
-    isInitialized.value = true;
-    console.log('Position system initialized');
+const loadDrafts = () => {
+  // Load drafts from localStorage
+  const savedDrafts = localStorage.getItem('mediaDrafts');
+  if (savedDrafts) {
+    drafts.value = JSON.parse(savedDrafts).map((draft: any) => ({
+      ...draft,
+      createdAt: new Date(draft.createdAt),
+      updatedAt: new Date(draft.updatedAt)
+    }));
   }
 };
 
-// Queue Management Methods
-const push = (item: TriggerItem) => {
-  if (isInitialized.value) {
-    assignRandomPosition(item);
-  }
+const saveDrafts = () => {
+  localStorage.setItem('mediaDrafts', JSON.stringify(drafts.value));
+};
+
+const onMediaLoaded = (items: any[]) => {
+  console.log('Media loaded:', items);
+};
+
+const loadDraft = (draft: MediaDraft) => {
+  // Convert draft media items to extended media items and add to queue
+  draft.mediaItems.forEach(mediaItem => {
+    const extendedMedia: ExtendedMediaItem = {
+      ...mediaItem,
+      isDraft: true,
+      draftInfo: draft
+    };
+    playQueue.value.push(extendedMedia);
+  });
+  viewMode.value = 'player';
   
-  queue.value.push(item);
-  emit('queueUpdated', [...queue.value]);
-  
-  // Auto-start playback if this is the first item and nothing is playing
-  if (queue.value.length === 1 && currentIndex.value === -1) {
+  if (playQueue.value.length > 0 && !isPlaying.value) {
     startPlayback();
   }
-
 };
 
-const enqueue = (item: TriggerItem) => push(item);
-const add = (item: TriggerItem) => push(item);
-
-const dequeue = () => {
-  if (queue.value.length === 0) return null;
-  
-  const item = queue.value.shift();
-  
-  // Adjust current index after removing item
-  if (currentIndex.value > 0) {
-    currentIndex.value--;
-  } else if (queue.value.length === 0) {
-    currentIndex.value = -1;
-    stopCurrentItem();
-  } else {
-    // Current item was removed, restart playback with new first item
-    currentIndex.value = 0;
-    if (!isPlaying.value) {
-      playCurrentItem();
-    }
-  }
-  
-  emit('queueUpdated', [...queue.value]);
-  
-  if (queue.value.length === 0) {
-    emit('queueEmpty');
-  }
-  
-  return item;
+const editDraft = (draft: MediaDraft) => {
+  // For now, just emit the event. In a real implementation, 
+  // this would open a draft editor modal
+  emit('draftUpdated', draft);
 };
 
-const clearQueue = () => {
-  stopCurrentItem();
-  queue.value = [];
-  currentIndex.value = -1;
-  emit('queueUpdated', []);
-  emit('queueEmpty');
+const deleteDraft = (draftId: string) => {
+  onDeleteDraft(draftId);
+};
+
+const createNewDraft = () => {
+  // For now, create a simple draft with current media items
+  const newDraft: MediaDraft = {
+    id: `draft_${Date.now()}`,
+    name: `Draft ${drafts.value.length + 1}`,
+    description: 'Auto-created draft',
+    mediaItems: mediaItems.value.slice(0, 3), // Take first 3 items as example
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isDraft: true
+  };
+  
+  onCreateDraft({
+    name: newDraft.name,
+    description: newDraft.description,
+    mediaItems: newDraft.mediaItems
+  });
+};
+
+// Event Handlers
+const onMediaSelected = (media: MediaRecord) => {
+  const extendedMedia: ExtendedMediaItem = {
+    ...media,
+    isDraft: false
+  };
+  
+  playQueue.value.push(extendedMedia);
+  viewMode.value = 'player';
+  
+  if (playQueue.value.length === 1) {
+    startPlayback();
+  }
+};
+
+const onCreateDraft = (draftData: { name: string; description?: string; mediaItems: MediaRecord[] }) => {
+  const newDraft: MediaDraft = {
+    id: `draft_${Date.now()}`,
+    name: draftData.name,
+    description: draftData.description,
+    mediaItems: draftData.mediaItems,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isDraft: true
+  };
+  
+  drafts.value.push(newDraft);
+  saveDrafts();
+  emit('draftCreated', newDraft);
+  
+  emitter.emit(MediaEvents.CreateDraft, newDraft);
+};
+
+const onEditDraft = (draft: MediaDraft) => {
+  const index = drafts.value.findIndex(d => d.id === draft.id);
+  if (index !== -1) {
+    drafts.value[index] = { ...draft, updatedAt: new Date() };
+    saveDrafts();
+    emit('draftUpdated', drafts.value[index]);
+  }
+};
+
+const onDeleteDraft = (draftId: string) => {
+  drafts.value = drafts.value.filter(d => d.id !== draftId);
+  saveDrafts();
+  emit('draftDeleted', draftId);
+  
+  emitter.emit(MediaEvents.DeleteDraft, draftId);
 };
 
 // Playback Control
 const startPlayback = () => {
-  if (queue.value.length === 0) return;
+  if (playQueue.value.length === 0) return;
   
   currentIndex.value = 0;
   playCurrentItem();
 };
 
 const playCurrentItem = () => {
-  if (!currentItem.value || currentIndex.value === -1) {
-    console.warn('No current item to play');
+  if (!currentMedia.value || currentIndex.value === -1) {
+    console.warn('No current media to play');
     return;
   }
   
-  const item = currentItem.value;
-  
-  // Stop any existing timer first
+  // Stop any existing timer
   if (durationTimer) {
     clearInterval(durationTimer);
     durationTimer = null;
   }
   
-  // Assign random position if needed
-  if (isInitialized.value) {
-    assignRandomPosition(item);
-  }
-  
-  // Set item as active and playing
-  item.active = true;
+  currentMedia.value = playQueue.value[currentIndex.value];
   isPlaying.value = true;
   
-  console.log(`Playing item: ${item.name} (${item.type})`);
-  emit('itemStarted', item);
+  console.log(`Playing media: ${currentMedia.value.name} (${currentMedia.value.type})`);
   
-  // Start duration timer for non-maxDuration items
-  if ((!item.maxDuration || item.type === 'image') && item.duration) {
-    startDurationTimer(item.duration * 1000);
+  // Start duration timer for non-video items
+  if (currentMedia.value.type !== 'video') {
+    startDurationTimer(5000); // Default 5 seconds for images/audio
   }
 };
 
 const stopCurrentItem = () => {
-  console.log('Stopping current item');
+  console.log('Stopping current media');
   
   if (durationTimer) {
     clearInterval(durationTimer);
     durationTimer = null;
-  }
-  
-  if (currentItem.value) {
-    currentItem.value.active = false;
   }
   
   isPlaying.value = false;
@@ -306,85 +332,33 @@ const stopCurrentItem = () => {
 
 const startDurationTimer = (duration: number) => {
   timeRemaining.value = duration;
-  console.log(`Starting duration timer: ${duration}ms`);
   
   durationTimer = setInterval(() => {
     timeRemaining.value -= 100;
     
     if (timeRemaining.value <= 0) {
-      console.log('Duration timer expired');
-      onItemEnded();
+      onMediaEnded();
     }
   }, 100);
 };
 
-const onItemEnded = () => {
-  console.log('Item ended');
-  
-  if (currentItem.value && currentItem.value.id) {
-    emit('itemEnded', currentItem.value);
-    currentItem.value.active = false;
-    
-    // Marcar como reproducido
-    playedItems.value.add(currentItem.value.id);
-  }
-  
+const onMediaEnded = () => {
+  console.log('Media ended');
   stopCurrentItem();
   
   // Auto-advance to next item
   if (hasNextItem()) {
     nextItem();
   } else {
-    // End of queue - limpiar solo los reproducidos
-    removePlayedItems();
-    
-    if (queue.value.length === 0) {
-      currentIndex.value = -1;
-      emit('queueEmpty');
-    } else {
-      // Si quedan items no reproducidos, reiniciar desde el principio
-      currentIndex.value = 0;
-      startPlayback();
-    }
+    // End of queue
+    currentIndex.value = -1;
+    currentMedia.value = null;
   }
 };
-const removePlayedItems = () => {
-  const originalLength = queue.value.length;
-  
-  // Filtrar items que NO han sido reproducidos
-  queue.value = queue.value.filter(item => item && item.id && !playedItems.value.has(item.id));
-  
-  // Limpiar el set de reproducidos
-  playedItems.value.clear();
-  
-  // Resetear el índice si se removieron items
-  if (queue.value.length !== originalLength) {
-    currentIndex.value = queue.value.length > 0 ? 0 : -1;
-    emit('queueUpdated', [...queue.value]);
-    
-    console.log(`Removed played items. Queue length: ${originalLength} -> ${queue.value.length}`);
-  }
-};
-const addNewTrigger = (trigger: TriggerItem) => {
-  // Assign random position if needed and system is initialized
-  if (isInitialized.value) {
-    assignRandomPosition(trigger);
-  }
-  
-  queue.value.push(trigger);
-  emit('queueUpdated', [...queue.value]);
-  
-  console.log(`New trigger added: ${trigger.name}. Queue length: ${queue.value.length}`);
-  
-  // Auto-start playback si no hay nada reproduciéndose
-  if (!isPlaying.value && currentIndex.value === -1) {
-    startPlayback();
-  }
 
-};
 // Navigation helpers
 const hasNextItem = (): boolean => {
-  return currentIndex.value < queue.value.length - 1;
+  return currentIndex.value < playQueue.value.length - 1;
 };
 
 const hasPreviousItem = (): boolean => {
@@ -393,10 +367,7 @@ const hasPreviousItem = (): boolean => {
 
 // Navigation
 const nextItem = () => {
-  if (queue.value.length === 0) {
-    console.warn('No items in queue');
-    return;
-  }
+  if (playQueue.value.length === 0) return;
   
   stopCurrentItem();
   
@@ -411,10 +382,7 @@ const nextItem = () => {
 };
 
 const previousItem = () => {
-  if (queue.value.length === 0) {
-    console.warn('No items in queue');
-    return;
-  }
+  if (playQueue.value.length === 0) return;
   
   stopCurrentItem();
   
@@ -423,16 +391,13 @@ const previousItem = () => {
     playCurrentItem();
   } else {
     // Loop to end
-    currentIndex.value = queue.value.length - 1;
+    currentIndex.value = playQueue.value.length - 1;
     playCurrentItem();
   }
 };
 
 const togglePlayPause = () => {
-  if (queue.value.length === 0) {
-    console.warn('No items in queue to play/pause');
-    return;
-  }
+  if (playQueue.value.length === 0) return;
   
   if (isPlaying.value) {
     stopCurrentItem();
@@ -445,146 +410,148 @@ const togglePlayPause = () => {
   }
 };
 
+const clearQueue = () => {
+  stopCurrentItem();
+  playQueue.value = [];
+  currentIndex.value = -1;
+  currentMedia.value = null;
+};
+
 // Media Event Handlers
 const onVideoLoaded = (videoElement: HTMLVideoElement) => {
   console.log('Video loaded');
-  if (currentItem.value) {
-    videoElement.volume = currentItem.value.volume / 100;
-    
-    if (currentItem.value.maxDuration) {
-      videoElement.addEventListener('ended', onVideoEnded);
-    }
-  }
+  isPlaying.value = true;
+  
+  videoElement.addEventListener('ended', onVideoEnded);
 };
 
 const onVideoEnded = () => {
-  console.log('Video ended (maxDuration)');
-  if (currentItem.value?.maxDuration) {
-    onItemEnded();
-  }
+  console.log('Video ended');
+  onMediaEnded();
 };
 
 const onImageLoaded = () => {
   console.log('Image loaded');
+  if (currentMedia.value && currentMedia.value.type === 'image') {
+    startDurationTimer(5000); // 5 seconds for images
+  }
 };
 
 const onAudioLoaded = (audioElement: HTMLAudioElement) => {
   console.log('Audio loaded');
-  if (currentItem.value) {
-    audioElement.volume = currentItem.value.volume / 100;
-    
-    if (currentItem.value.maxDuration) {
-      audioElement.addEventListener('ended', onAudioEnded);
-    }
-  }
+  isPlaying.value = true;
+  
+  audioElement.addEventListener('ended', onAudioEnded);
 };
 
 const onAudioEnded = () => {
-  console.log('Audio ended (maxDuration)');
-  if (currentItem.value?.maxDuration) {
-    onItemEnded();
-  }
+  console.log('Audio ended');
+  onMediaEnded();
 };
 
 const onMediaError = () => {
   console.error('Media failed to load');
-  onItemEnded();
+  onMediaEnded();
 };
 
-// Watch for container size changes
-watch(() => containerRef.value, async () => {
-  if (containerRef.value && !isInitialized.value) {
-    await initializePositions();
-  }
+// Event Listeners
+emitter.on(MediaEvents.selectedMedia, (media: MediaRecord) => {
+  onMediaSelected(media);
 });
 
-// Handle window resize
-const handleResize = () => {
-  if (containerRef.value && isInitialized.value) {
-    const containerRect = containerRef.value.getBoundingClientRect();
-    if (containerRect.width > 0 && containerRect.height > 0) {
-      updatePositionPool();
-    }
-  }
-};
+emitter.on(MediaEvents.CreateDraft, (draft: MediaDraft) => {
+  drafts.value.push(draft);
+  saveDrafts();
+});
+
+emitter.on(MediaEvents.EditDraft, (draft: MediaDraft) => {
+  onEditDraft(draft);
+});
+
+emitter.on(MediaEvents.DeleteDraft, (draftId: string) => {
+  onDeleteDraft(draftId);
+});
 
 // Expose methods
 defineExpose({
-  push,
-  enqueue,
-  add,
-  dequeue,
-  clearQueue,
-  nextItem,
-  previousItem,
-  startPlayback,
-  queue: queue.value,
-  currentItem,
-  isPlaying
+  loadMediaItems,
+  loadDrafts,
+  playQueue: playQueue.value,
+  currentMedia,
+  isPlaying,
+  viewMode
 });
 
 // Lifecycle
 onMounted(async () => {
   console.log('MediaPlayer mounted');
   
-  // Add sample data
-  queue.value = [...sampleQueue];
-  emit('queueUpdated', [...queue.value]);
+  // Initialize API
+  // api = new MediaApi(apiConfig); // Uncomment when apiConfig is available
   
-  // Initialize positions
-  await nextTick();
-  await initializePositions();
-  
-  // Start playback if we have items
-  if (queue.value.length > 0) {
-    startPlayback();
-  }
-  updateTriggers()
-  
-  // Listen for window resize
-  window.addEventListener('resize', handleResize);
+  // Load initial data
+  await loadMediaItems();
+  loadDrafts();
 });
-async function updateTriggers() {
-  const listTrigger = await triggerApi.list();
-  savedStoreTriggers.value = transformTriggersToArray(listTrigger);
-  console.log('listTrigger', savedStoreTriggers.value);
-  
-  return savedStoreTriggers.value;
-}
-emitter.on(TriggerEvents.Test,({triggerId})=>{
-  TriggerProcces(triggerId);
-})
-broadcastChannel.onmessage = ({data})=>{
-  if (data.event === TriggerEvents.Test) {
-    TriggerProcces(data.data.triggerId);
-  }
-}
-function TriggerProcces(id: string){
-    if (!id) {
-      console.warn('Invalid trigger ID',id);
-      return;
-    }
-      const trigger = getTriggerById(id);
-    if (trigger) {
-      addNewTrigger(trigger);
-    }
-}
-function getTriggerById(id: string){
-  return savedStoreTriggers.value.find((trigger) => trigger.id === id)
-}
+
 onUnmounted(() => {
   console.log('MediaPlayer unmounted');
   stopCurrentItem();
-  window.removeEventListener('resize', handleResize);
 });
 </script>
 
 <style scoped>
-.widget-container {
+.media-player-container {
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 400px;
   overflow: hidden;
+  background: #1a1a1a;
+  border-radius: 8px;
+}
+
+.gallery-view,
+.player-view {
+  width: 100%;
+  height: calc(100% - 60px);
+}
+
+.view-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.8);
+  border-top: 1px solid #333;
+}
+
+.view-toggle-btn {
+  padding: 8px 16px;
+  background: #333;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.view-toggle-btn:hover {
+  background: #444;
+  border-color: #666;
+}
+
+.view-toggle-btn.player-mode {
+  background: #2563eb;
+  border-color: #3b82f6;
+}
+
+.view-toggle-btn.player-mode:hover {
+  background: #1d4ed8;
 }
 </style>

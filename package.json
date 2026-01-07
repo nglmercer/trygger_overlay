@@ -13,6 +13,7 @@
     "@tailwindcss/vite": "^4.1.12",
     "astro": "^5.13.5",
     "lit": "^3.3.1",
+    "melser-ui": "^0.1.6-alpha.4",
     "tailwindcss": "^4.1.12",
     "vue": "^3.5.20"
   }

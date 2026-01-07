@@ -5,7 +5,7 @@ import {
   type FetchOptions,
   type ProxyConfig
 } from './httpservice.ts';
-import apiConfig from '../config/apiConfig.ts';
+import { type ApiConfig, apiConfig } from '../../../config/apiConfig.ts';
 
 interface UserInfo {
   token?: string;
@@ -16,9 +16,9 @@ interface UserInfo {
 // Polyfill (SSR)
 const ssrSafeStorage: Storage = {
   getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
-  clear: () => {},
+  setItem: () => { },
+  removeItem: () => { },
+  clear: () => { },
   length: 0,
   key: () => null
 };
@@ -30,19 +30,19 @@ const localStorage: Storage = typeof window !== 'undefined'
 
 class BaseApi {
   // Ya no guardamos 'host' como un string. Guardamos una referencia a la configuración.
-  private config: typeof apiConfig;
+  private config: ApiConfig;
   http: typeof http;
   token?: string;
   user: Record<string, any>;
 
   // El constructor ahora recibe el módulo de configuración
-  constructor(config: typeof apiConfig) {
-    this.config = config; // <-- Guarda la referencia
+  constructor(config?: ApiConfig) {
+    this.config = config || apiConfig; // <-- Guarda la referencia
     this.http = http;
     const info: UserInfo = safeParse(localStorage.getItem("info")) || {};
     this.token = info.token || localStorage.getItem("token") || undefined;
     this.user = safeParse(info.user || safeParse(localStorage.getItem("user"))) || {};
-    
+
     // Configurar proxy si está disponible en la configuración
     this.initializeProxy();
   }
@@ -61,7 +61,10 @@ class BaseApi {
    * Esto asegura que siempre usemos los valores más recientes.
    */
   get host(): string {
-    return this.config.getFullUrl();
+    if (typeof this.config.getFullUrl === 'function') {
+      return this.config.getFullUrl();
+    }
+    return apiConfig.getFullUrl()
   }
 
   /**
@@ -69,13 +72,13 @@ class BaseApi {
    * Delega la lógica de actualización al módulo de configuración.
    * @param newConfig - Un objeto con las propiedades a cambiar (host, port, proxy).
    */
-  updateConfig(newConfig: { 
-    host?: string; 
+  updateConfig(newConfig: {
+    host?: string;
     port?: number | string;
     proxy?: ProxyConfig;
   }): void {
     this.config.update(newConfig);
-    
+
     // Si se actualiza la configuración del proxy, aplicarla
     if (newConfig.proxy) {
       proxyConfig.update(newConfig.proxy);
@@ -128,7 +131,7 @@ class BaseApi {
    * @returns Opciones completas para la petición
    */
   protected _requestOptions(
-    options: Partial<FetchOptions> = {}, 
+    options: Partial<FetchOptions> = {},
     contentType: string | null = 'application/json'
   ): FetchOptions {
     return {
@@ -160,7 +163,7 @@ class BaseApi {
    * GET con opciones de proxy personalizadas
    */
   async get<T>(
-    endpoint: string, 
+    endpoint: string,
     options: FetchOptions = {}
   ): Promise<T> {
     const url = `${this.host}${endpoint}`;
@@ -172,8 +175,8 @@ class BaseApi {
    * POST con opciones de proxy personalizadas
    */
   async post<T>(
-    endpoint: string, 
-    body: any = {}, 
+    endpoint: string,
+    body: any = {},
     options: FetchOptions = {}
   ): Promise<T> {
     const url = `${this.host}${endpoint}`;
@@ -185,8 +188,8 @@ class BaseApi {
    * PUT con opciones de proxy personalizadas
    */
   async put<T>(
-    endpoint: string, 
-    body: any = {}, 
+    endpoint: string,
+    body: any = {},
     options: FetchOptions = {}
   ): Promise<T> {
     const url = `${this.host}${endpoint}`;
@@ -198,8 +201,8 @@ class BaseApi {
    * PATCH con opciones de proxy personalizadas
    */
   async patch<T>(
-    endpoint: string, 
-    body: any = {}, 
+    endpoint: string,
+    body: any = {},
     options: FetchOptions = {}
   ): Promise<T> {
     const url = `${this.host}${endpoint}`;
@@ -211,7 +214,7 @@ class BaseApi {
    * DELETE con opciones de proxy personalizadas
    */
   async delete<T>(
-    endpoint: string, 
+    endpoint: string,
     options: FetchOptions = {}
   ): Promise<T> {
     const url = `${this.host}${endpoint}`;
@@ -225,7 +228,7 @@ class BaseApi {
    * Realiza una petición GET usando proxy específico
    */
   async getWithProxy<T>(
-    endpoint: string, 
+    endpoint: string,
     proxySettings: ProxyConfig,
     options: Omit<FetchOptions, 'proxyConfig'> = {}
   ): Promise<T> {
@@ -240,7 +243,7 @@ class BaseApi {
    * Realiza una petición POST usando proxy específico
    */
   async postWithProxy<T>(
-    endpoint: string, 
+    endpoint: string,
     body: any = {},
     proxySettings: ProxyConfig,
     options: Omit<FetchOptions, 'proxyConfig'> = {}
@@ -256,7 +259,7 @@ class BaseApi {
    * Realiza una petición sin proxy (forzar bypass)
    */
   async getWithoutProxy<T>(
-    endpoint: string, 
+    endpoint: string,
     options: Omit<FetchOptions, 'useProxy'> = {}
   ): Promise<T> {
     return this.get<T>(endpoint, {
@@ -268,7 +271,7 @@ class BaseApi {
 class PrefixedApi extends BaseApi {
   protected pathPrefix: string;
 
-  constructor(config: typeof apiConfig, pathPrefix: string = '') {
+  constructor(config: ApiConfig, pathPrefix: string = '') {
     super(config);
     this.pathPrefix = pathPrefix;
   }

@@ -1,17 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import SearchInput from '@components/media/SearchInput.vue';
-import SortDropdown from '@components/media/SortDropdown.vue';
-import ViewToggle from '@components/media/ViewToggle.vue';
 import UsageStats from '@components/media/UsageStats.vue';  
 import EmptyState from '@components/media/EmptyState.vue';
 import UploadTab from '@components/media/UploadTab.vue';
 import MediaGallery from '@components/content/MediaGallery.vue';
 import { mediaApi, type MediaType } from '@utils/fetch/fetchapi.ts';
 import { emitter } from '@utils/Emitter';
-import { TriggerEvents } from 'src/config/events';
-type Tab = 'Images' | 'Videos' | 'Sounds' | 'Upload';
-type ViewMode = 'grid' | 'list';
+import type { Tab } from '@components/types';
 
 const TABS: { id: Tab; icon: string }[] = [
   { id: 'Images', icon: 'photo_library' },
@@ -22,23 +18,16 @@ const TABS: { id: Tab; icon: string }[] = [
 const tabsType: Record<Exclude<Tab, 'Upload'>, MediaType> = {
   'Images': 'image',
   'Videos': 'video',
-  'Sounds': 'audio'
-};
-
-const mediaTypeToTab: Record<MediaType, Tab> = {
-  'image': 'Images',
-  'video': 'Videos',
-  'audio': 'Sounds'
+  'Sounds': 'audio',
+  'Subtitles': 'subtitle'
 };
 
 const activeTab = ref<Tab>('Images');
-const viewMode = ref<ViewMode>('grid');
 const mediaItems = ref<any[]>([]);
-
-emitter.on(TriggerEvents.SelectFile, (type: MediaType) => {
-  console.log("type", type);
-  activeTab.value = mediaTypeToTab[type];
-})
+function closeModal(){
+  console.log("closeModal")
+  emitter.emit('uploadModal',false)
+}
 
 // Watch for changes in activeTab and fetch corresponding media
 watch(
@@ -73,13 +62,12 @@ const handleSearch = (query: string) => {
           <button 
             class="p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 absolute top-4 right-4" 
             aria-label="Close"
+            @click=closeModal
           >
             <span class="material-symbols-outlined">close</span>
           </button>
         <div class="flex sm:flex-nowrap flex-wrap items-center space-x-4"> 
           <SearchInput @search="handleSearch" />
-          <SortDropdown />
-          <ViewToggle v-model:viewMode="viewMode" />
         </div>
         <div class="hidden md:block flex-1"></div>
         <div class="flex items-center gap-4 mx-6">

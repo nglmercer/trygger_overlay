@@ -26,7 +26,7 @@
                     <PreviewSrc v-if="(item.type === 'image' || item.type === 'audio' || item.type === 'video') && item.url" :item="item" :getFullImageUrl="getFullImageUrl" 
                         />
                         <MaterialVue v-else class="text-5xl text-slate-500">help_outline</MaterialVue>
-                        <MaterialVue v-if="(item.type === selectedType) && item.url" @click="checkMedia(item)" :opticalSize="24" class="bg-blue-600 absolute top-4 right-4 rounded-2xl flex items-center justify-center p-2 hover:scale-125">
+                        <MaterialVue v-if="item.url && props.showSelectionButton" @click="selectMediaForDraft(item)" :opticalSize="24" class="bg-blue-600 absolute top-4 right-4 rounded-2xl flex items-center justify-center p-2 hover:scale-125 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           check
                         </MaterialVue>
                   </div>
@@ -48,21 +48,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineEmits  } from 'vue';
+import { ref, watch  } from 'vue';
 import { mediaApi } from '@utils/fetch/fetchapi';
 import { emitter } from '@utils/Emitter';
-import { MediaEvents, TriggerEvents } from 'src/config/events';
+import { MediaEvents } from 'src/config/events';
 import type { MediaItem, MediaType } from '@utils/fetch/fetchapi';
 import MaterialVue from '@components/static/MaterialVue.vue';
 import PreviewSrc from './Preview-src.vue';
 import {apiConfig} from '@utils/fetch/fetchapi';
 // --- PROPS: Entradas del componente, controladas por el padre ---
-interface Props {
+  interface Props {
   mediaType: MediaType;
   imageBaseUrl?: string;
+  showSelectionButton?: boolean; // Control externo para mostrar/ocultar el botón de selección
 }
 const props = withDefaults(defineProps<Props>(), {
   imageBaseUrl: apiConfig.getFullUrl(), // Por defecto, no hay base. El padre debería proveerla.
+  showSelectionButton: true, // Por defecto, mostrar el botón
 });
 
 // --- EMITS: Eventos que el componente envía al padre ---
@@ -129,7 +131,7 @@ const DeleteMedia = async (id: string) => {
   console.log('DeleteMedia:', id);
   const itemName = mediaItems.value.find(item => item.id === id)?.name;
   try {
-    await mediaApi.remove(id);
+    await mediaApi.deleteMedia(id);
     mediaItems.value = mediaItems.value.filter(item => item.id !== id);
         emitter.emit('show-notification', {
           type: 'success',
@@ -143,17 +145,22 @@ const DeleteMedia = async (id: string) => {
     });
   }
 };
-const checkMedia = (item: MediaItem) => {
-  selectedItem.value = item;
-//  console.log("selectedItem.value", selectedItem.value,selectedType.value);
+
+const selectMediaForDraft = (item: MediaItem) => {
+  // Emitir el evento de selección para drafts
   emitter.emit(MediaEvents.selectedMedia, {
-    item: JSON.parse(JSON.stringify(item)), // Convert Proxy to plain object
-    type: selectedType.value
-  })
-}
-emitter.on(TriggerEvents.SelectFile, (type: MediaType) => {
-  selectedType.value = type;
-})
+    id: item.id,
+    name: item.name,
+    type: item.type,
+    url: item.url || ''
+  });
+  
+  emitter.emit('show-notification', {
+    type: 'success',
+    message: `Elemento "${item.name}" seleccionado para drafts.`,
+  });
+};
+
 // --- REACTIVIDAD ---
 // Observamos cambios en la prop `mediaType`. Cuando el padre la cambia,
 // esta función se ejecuta para volver a cargar los datos.

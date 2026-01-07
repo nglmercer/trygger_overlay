@@ -6,7 +6,7 @@
       v-if="currentItem && currentItem.type === 'video'"
       ref="videoRef"
       class="media-element video-element"
-      :src="urlBase + currentItem.item.url"
+      :src="urlBase + currentItem.url"
       :style="getMediaStyle(currentItem)"
       @loadedmetadata="handleVideoLoaded"
       @ended="$emit('videoEnded')"
@@ -21,7 +21,7 @@
       v-else-if="currentItem && currentItem.type === 'image'"
       ref="imageRef"
       class="media-element image-element"
-      :src="urlBase + currentItem.item.url"
+      :src="urlBase + currentItem.url"
       :style="getMediaStyle(currentItem)"
       @load="handleImageLoaded"
       @error="$emit('mediaError')"
@@ -32,7 +32,7 @@
       v-else-if="currentItem && currentItem.type === 'audio'"
       ref="audioRef"
       class="audio-element"
-      :src="urlBase + currentItem.item.url"
+      :src="urlBase + currentItem.url"
       :style="getAudioStyle(currentItem)"
       @loadedmetadata="handleAudioLoaded"
       @ended="$emit('audioEnded')"
@@ -70,10 +70,17 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
-import type{ TriggerItem } from '@utils/fetch/fetchapi';
+import type{ MediaRecord } from '@utils/fetch/fetchapi';
+
+interface MediaItem extends MediaRecord {
+  volume?: number;
+  maxDuration?: boolean;
+  position?: { x: number; y: number };
+  displaySize?: number;
+}
 
 const props = defineProps<{
-  currentItem: TriggerItem | null;
+  currentItem: MediaItem | null;
   urlBase: string;
 }>();
 
@@ -253,7 +260,7 @@ const requestAudioPermission = async () => {
 const applyAudioSettings = async () => {
   if (!props.currentItem || !isAudioEnabled.value) return;
   
-  const volume = props.currentItem.volume / 100;
+  const volume = (props.currentItem.volume || 50) / 100; // Default volume 50%
   
   if (videoRef.value && props.currentItem.type === 'video') {
     isVideoMuted.value = false;
@@ -319,8 +326,9 @@ const getSizeCategory = (size: number): keyof typeof MEDIA_SIZES => {
   return 'xlarge';
 };
 
-const getResponsiveDimensions = (item: TriggerItem) => {
-  const sizeCategory = getSizeCategory(item.size);
+const getResponsiveDimensions = (item: MediaItem) => {
+  const size = item.displaySize || 30; // Default size if not specified
+  const sizeCategory = getSizeCategory(size);
   const baseDimensions = MEDIA_SIZES[sizeCategory];
   const aspectRatio = ASPECT_RATIOS['16:9'];
   
@@ -335,14 +343,15 @@ const getResponsiveDimensions = (item: TriggerItem) => {
   return { width, height };
 };
 
-const getMediaStyle = (item: TriggerItem) => {
+const getMediaStyle = (item: MediaItem) => {
   const dimensions = getResponsiveDimensions(item);
-  const shouldCenter = (item.position.x === 50 && item.position.y === 50);
+  const position = item.position || { x: 50, y: 50 }; // Default center position
+  const shouldCenter = (position.x === 50 && position.y === 50);
   
   return {
     width: `${dimensions.width}vw`,
-    left: `${item.position.x}%`,
-    top: `${item.position.y}%`,
+    left: `${position.x}%`,
+    top: `${position.y}%`,
     minWidth: '150px',
     minHeight: '100px',
     maxWidth: '60vw',
@@ -353,10 +362,12 @@ const getMediaStyle = (item: TriggerItem) => {
   };
 };
 
-const getAudioStyle = (item: TriggerItem) => {
+const getAudioStyle = (item: MediaItem) => {
+  const position = item.position || { x: 50, y: 50 }; // Default center position
+  
   return {
-    left: `${item.position.x}%`,
-    top: `${item.position.y}%`,
+    left: `${position.x}%`,
+    top: `${position.y}%`,
     width: '300px',
     minWidth: '250px',
     maxWidth: '400px',
@@ -367,7 +378,7 @@ const getAudioStyle = (item: TriggerItem) => {
 // Enhanced event handlers
 const handleVideoLoaded = async () => {
   if (videoRef.value && props.currentItem) {
-    const volume = props.currentItem.volume / 100;
+    const volume = (props.currentItem.volume || 50) / 100; // Default volume 50%
     
     if (isAudioEnabled.value || isInOBSMode.value) {
       videoRef.value.volume = volume;
@@ -406,7 +417,7 @@ const handleVideoCanPlay = async () => {
 
 const handleAudioLoaded = async () => {
   if (audioRef.value && props.currentItem) {
-    const volume = props.currentItem.volume / 100;
+    const volume = (props.currentItem.volume || 50) / 100; // Default volume 50%
     
     if (isAudioEnabled.value || isInOBSMode.value) {
       audioRef.value.volume = volume;

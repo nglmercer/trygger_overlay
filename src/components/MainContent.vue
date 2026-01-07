@@ -1,38 +1,63 @@
-<!-- src/views/DashboardView.vue -->
+<!-- MainContent.vue for Media Organization -->
 <template>
-  <div class="w-full m-2 ">
-    <!-- 2. El componente que escucha los eventos y muestra el contenido -->
+  <div class="w-full m-2">
+    <!-- Media Organization Interface -->
     <TabContent>
-      <!-- 
-        Aquí proporcionamos el contenido para cada pestaña usando la sintaxis de slots de Vue.
-        La estructura es <template #NOMBRE_DEL_SLOT>...</template>
-        El nombre del slot debe coincidir con el `label` de la pestaña.
-      -->
-      
+      <!-- Media Gallery and Organization -->
       <template #Images>
-        <TriggerElements type="image" />
+        <MediaGallery mediaType="image" />
       </template>
 
       <template #Videos>
-        <TriggerElements type="video" />
+        <MediaGallery mediaType="video" />
       </template>
       
       <template #Sounds>
-        <TriggerElements type="audio"/>
-      </template>
-
-      <template #Groups>
-        <TriggerElements type="groups"/>
+        <MediaGallery mediaType="audio" />
       </template>
       
-      <!-- Puedes omitir los slots para las pestañas que no tienen contenido aún -->
-      
+      <template #drafts>
+        <DraftsList />
+      </template>
     </TabContent>
   </div>
 </template>
 
 <script setup lang="ts">
-// Importamos los componentes que vamos a usar en este "contenedor"
+import { ref, onMounted, onUnmounted } from 'vue';
+import { emitter } from '@utils/Emitter';
 import TabContent from '@components/content/TabContent.vue';
-import TriggerElements from './content/TriggerElements.vue';
+import MediaGallery from './content/MediaGallery.vue';
+import DraftsList from './drafts/DraftsList.vue';
+
+// Component-level logic for MainContent
+const isOpen = ref(false);
+
+// Function to trigger open select elements event
+const openSelectElements = () => {
+  emitter.emit('open-select-elements', {
+    isOpen: true,
+    timestamp: Date.now()
+  });
+  isOpen.value = true;
+};
+
+// Cleanup function
+const cleanup = () => {
+  isOpen.value = false;
+};
+
+// Setup and cleanup
+onMounted(() => {
+  emitter.on('close-elements', cleanup);
+});
+
+onUnmounted(() => {
+  emitter.off('close-elements', cleanup);
+});
+
+// Expose the function to parent components
+defineExpose({
+  openSelectElements
+});
 </script>
