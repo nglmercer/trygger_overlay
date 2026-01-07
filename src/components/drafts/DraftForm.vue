@@ -4,9 +4,10 @@ import { emitter } from '@utils/Emitter';
 import { MediaEvents } from 'src/config/events';
 import DraftsApi, { type Draft, type CreateDraftDto, type UpdateDraftDto, DraftStatus } from '@utils/fetch/draftsapi.ts';
 import apiConfig from 'src/config/apiConfig';
-import MediaSelection from './MediaSelection.vue';
+import MultimediaResources from './MultimediaResources.vue';
 import FormActions from './FormActions.vue';
 import { MelserSelect as MeSelect ,BaseInput,MelserTextarea as MeTextarea } from 'melser-ui';
+
 // Props
 interface Props {
   editingDraft?: Draft | null;
@@ -59,7 +60,6 @@ watch(() => props.editingDraft, (newDraft) => {
     // Cargar medios si existen los IDs
     if (newDraft.mediaIds && newDraft.mediaIds.length > 0) {
       // Por ahora, creamos objetos básicos con los IDs
-      // En una implementación completa, aquí se cargarían los detalles de los medios
       selectedMediaItems.value = newDraft.mediaIds.map(id => ({
         id,
         name: `Elemento ${id}`,
@@ -76,15 +76,17 @@ watch(() => props.editingDraft, (newDraft) => {
   }
 }, { immediate: true });
 
-// Función para abrir el selector de elementos (emite evento que puede ser capturado por otros componentes)
-function uploadModal() {
-  console.log("Abriendo selector de elementos multimedia");
+// Función para abrir el selector de elementos
+function uploadModal(options = {}) {
+  console.log("Abriendo selector de elementos multimedia con opciones:", options);
   // Mostrar botones de selección en las galerías
-  emitter.emit('show-selection-buttons', {});
+  emitter.emit('show-selection-buttons', options);
   
   emitter.emit("uploadModal", {
+    show: true,
     source: 'draft-form',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    ...options
   });
 }
 
@@ -108,14 +110,17 @@ const handleMediaSelection = (mediaData: any) => {
   }
 };
 
-// Función para eliminar un elemento específico del array
-const removeMediaItem = (index: number) => {
-  const removedItem = selectedMediaItems.value[index];
-  selectedMediaItems.value.splice(index, 1);
-  emitter.emit('show-notification', {
-    type: 'info',
-    message: `Elemento "${removedItem.name}" eliminado del draft.`,
-  });
+// Función para eliminar un elemento por ID
+const removeMediaItemById = (id: string | number) => {
+  const index = selectedMediaItems.value.findIndex(item => item.id === id);
+  if (index !== -1) {
+    const removedItem = selectedMediaItems.value[index];
+    selectedMediaItems.value.splice(index, 1);
+    emitter.emit('show-notification', {
+      type: 'info',
+      message: `Elemento "${removedItem.name}" eliminado del draft.`,
+    });
+  }
 };
 
 // Función para limpiar toda la selección
@@ -123,7 +128,7 @@ const clearSelection = () => {
   selectedMediaItems.value = [];
   emitter.emit('show-notification', {
     type: 'info',
-    message: 'Todos los elementos multimedia eliminados del draft.',
+    message: 'Todos lo elementos multimedia eliminados del draft.',
   });
 };
 
@@ -224,11 +229,10 @@ onUnmounted(() => {
               <option value="draft">Borrador</option>
               <option value="published">Publicado</option>
             </me-select>
-          <MediaSelection 
-            :selected-media-items="selectedMediaItems"
+          <MultimediaResources 
+            :selected-items="selectedMediaItems"
             @open-selector="uploadModal"
-            @remove-item="removeMediaItem"
-            @clear-all="clearSelection"
+            @remove-item="removeMediaItemById"
           />
         </section>
         <!-- acciones -->
@@ -257,36 +261,10 @@ onUnmounted(() => {
   max-width: 100%;
 }
 
-.config-modal {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
 /* Responsive design */
-@media (max-width: 768px) {
-  .config-modal {
-    margin: 0 1rem;
-    max-width: calc(100vw - 2rem);
-  }
-}
-
 @media (max-width: 640px) {
-  .config-modal {
-    margin: 0;
-    max-width: 100vw;
-    min-height: 100vh;
-    border-radius: 0;
-  }
-  
   h2 {
     font-size: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .config-modal {
-    min-width: 800px;
   }
 }
 
@@ -298,29 +276,5 @@ section {
 /* Focus states */
 form:focus-within {
   outline: none;
-}
-
-/* Custom scrollbar for modal */
-.config-modal {
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.config-modal::-webkit-scrollbar {
-  width: 8px;
-}
-
-.config-modal::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-}
-
-.config-modal::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5);
-  border-radius: 4px;
-}
-
-.config-modal::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.7);
 }
 </style>
