@@ -1,22 +1,26 @@
 <!-- components/MediaGallery.vue -->
 <template>
     <!-- El contenedor principal ya no necesita gestionar el padding/fondo, eso lo hará el padre -->
-    <div class="w-full">
-        <!-- Estados de Carga, Error y Vacío -->
-        <div v-if="isLoading" class="text-center py-10">
-            <p class="mt-2 text-lg text-gray-600 dark:text-gray-300">Cargando Media ({{ props.mediaType }})...</p>
+    <div class="w-full relative min-h-[400px]">
+        <!-- Indicador de Carga discreto (Overlay) -->
+        <div v-if="isLoading" class="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] rounded-lg">
+            <div class="flex flex-col items-center gap-2">
+                <div class="w-8 h-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                <p class="text-xs text-blue-400 font-bold tracking-widest uppercase">Syncing</p>
+            </div>
         </div>
-        <div v-else-if="error"
+
+        <div v-if="error"
             class="text-center py-10 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg">
             <p class="font-bold">Ocurrió un error:</p>
             <p>{{ error }}</p>
         </div>
-        <div v-else-if="mediaItems.length === 0" class="text-center py-10">
+        <div v-else-if="mediaItems.length === 0 && !isLoading" class="text-center py-10">
             <p class="mt-2 text-xl text-gray-500 dark:text-gray-400">No se encontraron medios de tipo '{{ props.mediaType }}'.</p>
         </div>
 
         <!-- Cuadrícula de Medios -->
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-300" :class="{ 'opacity-50 pointer-events-none': isLoading }">
             <div v-for="item in mediaItems" :key="item.id"
                 class="group relative bg-slate-800 rounded-lg shadow-md overflow-hidden">
 

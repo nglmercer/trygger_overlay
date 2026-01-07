@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { Tab } from '@components/types';
 
 const props = defineProps<{
   type: Tab;
@@ -12,6 +13,7 @@ const iconName = computed(() => {
     case 'Images': return 'image_search';
     case 'Videos': return 'video_search';
     case 'Sounds': return 'audio_file';
+    case 'Subtitles': return 'closed_caption';
     case 'Upload': return 'cloud_upload';
     default: return '';
   }
