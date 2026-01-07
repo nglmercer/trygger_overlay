@@ -1,0 +1,57 @@
+---
+// src/components/FloatingActionButtons.astro
+import MaterialIcon from "@components/static/MaterialIcon.astro";
+
+const baseBtn = "p-4 flex justify-center align-center";
+const floatBtn = "bg-blue-600 hover:bg-blue-800 rounded-full";
+const linkBtn = "bg-gray-600 hover:bg-gray-800 rounded-full";
+const absoluteRight4 = "absolute right-4";
+---
+
+<div class="relative">
+  <button
+    type="button"
+    id="ConfigTrigger"
+    class={`${baseBtn} ${linkBtn} ${absoluteRight4} bottom-36`}
+  >
+    <MaterialIcon icon="settings" />
+  </button>
+  <button
+    type="button"
+    id="addMediaElement"
+    class={`${baseBtn} ${floatBtn} ${absoluteRight4} bottom-20`}
+  >
+    <MaterialIcon icon="add" />
+  </button>
+  <button
+    type="button"
+    id="LinkTrigger"
+    class={`${baseBtn} ${linkBtn} ${absoluteRight4} bottom-4 `}
+  >
+    <MaterialIcon icon="add_link" />
+  </button>
+</div>
+
+<script>
+  import { emitter } from "@utils/Emitter";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const addMediaElement = document.querySelector("#addMediaElement") as HTMLButtonElement;
+    const linkTrigger = document.querySelector("#LinkTrigger") as HTMLButtonElement;
+    const configTrigger = document.querySelector("#ConfigTrigger") as HTMLButtonElement;
+
+    addMediaElement?.addEventListener("click", async () => {
+      emitter.emit("uploadModal", true);
+    });
+
+    linkTrigger?.addEventListener("click", () => {
+      const linkModal = document.querySelector(".link_modal") as HTMLElement & { show?: () => void };
+      linkModal?.show?.();
+    });
+
+    configTrigger?.addEventListener("click", () => {
+      const configModal = document.querySelector(".config_modal") as HTMLElement & { show?: () => void };
+      configModal?.show?.();
+    });
+  });
+</script>

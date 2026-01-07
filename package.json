@@ -10,9 +10,13 @@
   },
   "dependencies": {
     "@astrojs/vue": "^5.1.0",
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
     "@tailwindcss/vite": "^4.1.12",
     "astro": "^5.13.5",
     "lit": "^3.3.1",
+    "mediabunny": "^1.27.4",
     "melser-ui": "^0.1.6-alpha.4",
     "tailwindcss": "^4.1.12",
     "vue": "^3.5.20"

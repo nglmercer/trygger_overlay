@@ -1,0 +1,28 @@
+---
+// src/components/UploadModal.astro
+import Upload from "../components/media/upload.vue";
+import { emitter } from "@utils/Emitter";
+import DialogModal from "./DialogModal.astro";
+---
+
+<DialogModal id="uploadModal" class="upload_modal">
+  <Upload client:only="vue" @close-modal={() => {
+    const uploadModal = document.querySelector(".upload_modal") as HTMLElement & { hide?: () => void };
+    uploadModal?.hide?.();
+  }} />
+</DialogModal>
+
+<script>
+  import { emitter } from "@utils/Emitter";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Listen for uploadModal events from other components
+    emitter.on("uploadModal", (data = true) => {
+      const uploadModal = document.querySelector(".upload_modal") as HTMLElement & { show?: () => void; hide?: () => void };
+      if (!uploadModal) return;
+      
+      const shouldShow = typeof data === "object" ? data.show !== false : data === true;
+      shouldShow ? uploadModal.show?.() : uploadModal.hide?.();
+    });
+  });
+</script>

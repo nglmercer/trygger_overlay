@@ -8,7 +8,18 @@ import vue from '@astrojs/vue';
 // https://astro.build/config
 export default defineConfig({
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    server: {
+      headers: {
+        // Ensure proper MIME types for worker files
+        '.js': 'application/javascript',
+        '.wasm': 'application/wasm',
+        '.worker.js': 'application/javascript'
+      }
+    },
+    optimizeDeps: {
+      exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/core']
+    }
   },
   integrations: [vue({
       devtools: true,

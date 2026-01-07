@@ -1,0 +1,71 @@
+---
+// src/components/LinkModal.astro
+import MaterialIcon from "@components/static/MaterialIcon.astro";
+import DialogModal from "./DialogModal.astro";
+---
+
+<DialogModal id="linkModal" class="link_modal" style="position:absolute">
+  <div class="p-6 flex flex-col gap-4 bg-gray-800 rounded-md shadow-md">
+    <div class="flex items-center gap-2">
+      <input
+        type="text"
+        id="linkInput"
+        class="flex-1 p-2 rounded-md border-0 bg-gray-700 text-white placeholder-gray-400"
+        placeholder="Enter link URL"
+        readonly
+      />
+      <button type="button" id="copyBtn" class="btn btn-primary">
+        <MaterialIcon icon="content_copy" />
+      </button>
+    </div>
+    <div class="flex justify-between items-center gap-2">
+      <select name="TriggerOptions" id="TriggerOptions" class="bg-gray-700 p-2 rounded-md text-white">
+        <option value="">Select trigger...</option>
+      </select>
+      <button type="button" id="testBtn" class="btn btn-primary">
+        <MaterialIcon icon="send" />
+      </button>
+    </div>
+  </div>
+</DialogModal>
+
+<script>
+  import { emitter } from "@utils/Emitter";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const linkInput = document.querySelector("#linkInput") as HTMLInputElement;
+    const copyBtn = document.querySelector("#copyBtn") as HTMLButtonElement;
+    const testBtn = document.querySelector("#testBtn") as HTMLButtonElement;
+
+    // Set the link URL
+    const linkUrl = window.location.href + "widget";
+    if (linkInput) {
+      linkInput.value = linkUrl;
+    }
+
+    // Copy to clipboard
+    copyBtn?.addEventListener("click", async () => {
+      if (!linkInput) return;
+      try {
+        await navigator.clipboard.writeText(linkInput.value);
+        emitter.emit("notifications:add", {
+          message: "Link copied to clipboard",
+          type: "success",
+        });
+      } catch {
+        linkInput.select();
+        linkInput.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+      }
+    });
+
+    // Test trigger
+    testBtn?.addEventListener("click", () => {
+      const triggerOptions = document.querySelector("#TriggerOptions") as HTMLSelectElement;
+      const triggerId = triggerOptions?.value;
+      if (triggerId) {
+        emitter.emit("widget:trigger", { triggerId });
+      }
+    });
+  });
+</script>

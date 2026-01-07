@@ -1,16 +1,12 @@
 ---
 import Layout from "../layout/Layout.astro";
 import Tabs from "../components/tabs.astro";
-import Upload from "../components/media/upload.vue";
+import UploadModal from "../components/UploadModal.astro";
+import LinkModal from "../components/LinkModal.astro";
 import NotificationContainer from "@components/NotificationContainer.vue";
 import MainContent from "@components/MainContent.vue";
-import MaterialIcon from "@components/static/MaterialIcon.astro";
 import ConfigApi from "@components/ConfigApi.vue";
-
-const baseBtn = "p-4 flex justify-center align-center";
-const floatBtn = "bg-blue-600 hover:bg-blue-800 rounded-full";
-const linkBtn = "bg-gray-600 hover:bg-gray-800 rounded-full";
-const absoluteRight4 = "absolute right-4";
+import FloatingActionButtons from "@components/FloatingActionButtons.astro";
 ---
 
 <Layout>
@@ -19,116 +15,8 @@ const absoluteRight4 = "absolute right-4";
   <NotificationContainer client:only="vue" />
   <ConfigApi client:only="vue" />
 
-  <dlg-cont class="upload_modal">
-    <Upload client:only="vue" @close-modal={} />
-  </dlg-cont>
-  <dlg-cont class="link_modal" style="position:absolute">
-    <div class="p-6 flex flex-col gap-4 bg-gray-800 rounded-md shadow-md">
-      <div class="flex items-center gap-2">
-        <input
-          type="text"
-          id="linkInput"
-          class="flex-1 p-2 rounded-md border-0"
-          placeholder="Enter link URL"
-          disabled
-        />
-        <button type="button" id="copyBtn" class="btn btn-primary">
-          Copy
-        </button>
-      </div>
-      <div class="flex justify-between">
-        <select name="TriggerOptions" id="TriggerOptions" class="bg-black p-2">
-        </select>
-        <button type="button" id="testBtn" class="btn btn-primary">
-          <MaterialIcon icon="send" />
-        </button>
-      </div>
-    </div>
-  </dlg-cont>
-  <button
-    type="button"
-    id="ConfigTrigger"
-    class={`${baseBtn} ${linkBtn} ${absoluteRight4} bottom-36`}
-  >
-    <MaterialIcon icon="settings" />
-  </button>
-  <button
-    type="button"
-    id="addMediaElement"
-    class={`${baseBtn} ${floatBtn} ${absoluteRight4} bottom-20`}
-  >
-    <MaterialIcon icon="add" />
-  </button>
-  <button
-    type="button"
-    id="LinkTrigger"
-    class={`${baseBtn} ${linkBtn} ${absoluteRight4} bottom-4 `}
-  >
-    <MaterialIcon icon="add_link" />
-  </button>
+  <UploadModal />
+  <LinkModal />
+  
+  <FloatingActionButtons />
 </Layout>
-<script>
-  import { DlgCont } from "@litcomponents/modal";
-  import { emitter } from "@utils/Emitter";
-  import broadcastChannel from "@utils/brodcast";
-  import WebSocketClient, { handlers } from "@utils/ws";
-  document.addEventListener("DOMContentLoaded", () => {
-    const addMediaElement = document.querySelector(
-      "#addMediaElement"
-    ) as HTMLButtonElement;
-    const linkTrigger = document.querySelector(
-      "#LinkTrigger"
-    ) as HTMLButtonElement;
-    const triggerOptions = document.querySelector(
-      "#TriggerOptions"
-    ) as HTMLSelectElement;
-    const uploadModal = document.querySelector(".upload_modal") as DlgCont;
-    if (!addMediaElement || !linkTrigger || !uploadModal) return;
-    addMediaElement.addEventListener("click", async () => {
-      uploadModal.show();
-    });
-    const linkInput = document.querySelector("#linkInput") as HTMLInputElement;
-    const LinkUrl = window.location.href + "widget";
-    linkInput.value = LinkUrl;
-    const copyBtn = document.querySelector("#copyBtn") as HTMLButtonElement;
-    emitter.on("uploadModal", (data = true) => {
-      const shouldShow =
-        typeof data === "object" ? data.show !== false : data === true;
-      shouldShow ? uploadModal.show() : uploadModal.hide();
-    });
-    copyBtn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(linkInput.value);
-        /* 				emitter.emit(Notifications.addNotification,{
-					message: 'Link copied to clipboard',
-					type: 'success',
-				}) */
-      } catch (err) {
-        // Fallback for older browsers
-        linkInput.select();
-        linkInput.setSelectionRange(0, 99999);
-        document.execCommand("copy");
-      }
-    });
-    linkTrigger.addEventListener("click", () => {
-      //not implemented
-      const linkModal = document.querySelector(".link_modal") as DlgCont;
-      linkModal.show();
-    });
-    const testBtn = document.querySelector("#testBtn") as HTMLButtonElement;
-
-    testBtn?.addEventListener("click", () => {
-      /*
-			wsClient.send(JSON.stringify({
-				event: 'TriggerEvents:ID',
-				data: triggerOptions?.value,
-			}))
- 			broadcastChannel.postMessage({
-				event: TriggerEvents.Test,
-				data: {
-					triggerId: triggerOptions?.value,
-				}
-			}); */
-    });
-  });
-</script>

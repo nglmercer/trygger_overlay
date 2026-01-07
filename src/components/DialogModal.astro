@@ -1,0 +1,21 @@
+---
+// src/components/DialogModal.astro
+export interface Props {
+  id: string;
+  class?: string;
+  style?: string;
+}
+
+const { id, class: className = "", style = "" } = Astro.props;
+---
+
+<dlg-cont id={id} class={className} style={style}>
+  <slot />
+</dlg-cont>
+
+<script>
+  import { DlgCont } from "@litcomponents/modal";
+  
+  // Ensure custom elements are defined
+  customElements.define("dlg-cont", DlgCont);
+</script>
