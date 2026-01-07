@@ -4,10 +4,9 @@ import { emitter } from '@utils/Emitter';
 import { MediaEvents } from 'src/config/events';
 import DraftsApi, { type Draft, type CreateDraftDto, type UpdateDraftDto, DraftStatus } from '@utils/fetch/draftsapi.ts';
 import apiConfig from 'src/config/apiConfig';
-import DraftFormFields from './DraftFormFields.vue';
 import MediaSelection from './MediaSelection.vue';
 import FormActions from './FormActions.vue';
-
+import { MelserSelect as MeSelect ,BaseInput,MelserTextarea as MeTextarea } from 'melser-ui';
 // Props
 interface Props {
   editingDraft?: Draft | null;
@@ -197,26 +196,34 @@ onUnmounted(() => {
     <div class="p-4 sm:p-6 bg-slate-800 rounded-lg shadow-xl">
       <!-- Form -->
       <form @submit.prevent="submitDraft" class="space-y-6">
-        <!-- Sección de información del draft -->
-        <section class="space-y-4">
-          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-            <span class="w-1 h-5 bg-blue-500 rounded-full"></span>
-            Información del Draft
-          </h3>
-          <DraftFormFields 
-            :form-data="draftForm"
-            @update:content="draftForm.content = $event"
-            @update:tags="draftForm.tags = $event"
-            @update:status="draftForm.status = $event"
-          />
+        <section>
+          <div class="">
+            <base-input
+            type="text"
+            placeholder="Escribe tu draft..."
+            name="title"
+            ></base-input>
+            <me-textarea
+              label="Descripción detallada"
+              placeholder="Describe tu producto o servicio..."
+              auto-resize
+              rows="3"
+              maxlength="1000"
+              show-counter
+              name="description"
+            >
+            </me-textarea>
+          </div>
         </section>
-
-        <!-- Sección de selección de media -->
-        <section class="space-y-4">
-          <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-            <span class="w-1 h-5 bg-green-500 rounded-full"></span>
-            Contenido Multimedia
-          </h3>
+        <section>
+          <!-- etiquetas y estado -->
+            <me-select
+              label="Estado"
+              name="status"
+            >
+              <option value="draft">Borrador</option>
+              <option value="published">Publicado</option>
+            </me-select>
           <MediaSelection 
             :selected-media-items="selectedMediaItems"
             @open-selector="uploadModal"
@@ -224,7 +231,6 @@ onUnmounted(() => {
             @clear-all="clearSelection"
           />
         </section>
-
         <!-- acciones -->
         <section class="border-t border-slate-700 pt-6">
 
